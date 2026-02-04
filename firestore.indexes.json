@@ -22,6 +22,7 @@
       "fields": [
         { "fieldPath": "completed", "order": "ASCENDING" },
         { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "interrupted", "order": "ASCENDING" },
         { "fieldPath": "completedAt", "order": "DESCENDING" }
       ]
     }

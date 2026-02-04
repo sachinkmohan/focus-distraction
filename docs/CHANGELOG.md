@@ -54,7 +54,7 @@ npx firebase-tools deploy --only firestore:indexes
 - Enter hours: 0-23
 - Enter minutes: 0-59
 - Enter seconds: 0-59
-- Example: 1h 30m 0s = 90 minute timer
+- Example: 1h 30m 0s = 90-minute timer
 
 **Exceeded Timer (Break mode only):**
 - Set 5-minute break at 3:00 PM

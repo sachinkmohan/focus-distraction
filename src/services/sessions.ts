@@ -114,13 +114,14 @@ export async function checkRecentBreakSession(userId: string): Promise<
   | { status: 'none' }
   | { status: 'exceeded'; session: Session; exceededSeconds: number }
 > {
-  // Check for break sessions completed in the last 2 hours
+  // Check for break sessions completed in the last 2 hours (not interrupted)
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
   const q = query(
     sessionsRef(userId),
     where('completed', '==', true),
     where('type', '==', 'break'),
+    where('interrupted', '==', false),
     where('completedAt', '>=', Timestamp.fromDate(twoHoursAgo)),
     orderBy('completedAt', 'desc'),
     limit(1),
@@ -135,8 +136,11 @@ export async function checkRecentBreakSession(userId: string): Promise<
 
   if (!session.completedAt) return { status: 'none' };
 
-  // Calculate how long ago the break ended
-  const exceededSeconds = Math.floor((Date.now() - session.completedAt.getTime()) / 1000);
+  // Calculate how long ago the break ended (prevent negative values from clock skew)
+  const exceededSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - session.completedAt.getTime()) / 1000),
+  );
 
   return { status: 'exceeded', session, exceededSeconds };
 }

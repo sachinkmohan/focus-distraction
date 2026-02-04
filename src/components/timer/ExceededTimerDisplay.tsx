@@ -23,9 +23,9 @@ export function ExceededTimerDisplay({ completedAt, exceededSeconds }: ExceededT
         </span>
       </div>
 
-      <div className="mt-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
+      <div role="alert" className="mt-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
         <p className="text-xs text-red-700 text-center">
-          ⚠️ Your break time is over
+          <span aria-hidden="true">⚠️</span> Your break time is over
         </p>
       </div>
     </div>
