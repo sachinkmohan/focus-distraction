@@ -9,6 +9,10 @@ export interface StatsSummary {
 }
 
 function summarize(sessions: Session[]): StatsSummary {
+  // Only count sessions that were completed fully (not interrupted)
+  const completedSessions = sessions.filter((s) => !s.interrupted);
+
+  // But include ALL sessions (interrupted or not) for time tracking
   const focusSeconds = sessions
     .filter((s) => s.type === 'focus')
     .reduce((sum, s) => sum + s.duration, 0);
@@ -17,7 +21,7 @@ function summarize(sessions: Session[]): StatsSummary {
     .reduce((sum, s) => sum + s.duration, 0);
 
   return {
-    sessionsCompleted: sessions.length,
+    sessionsCompleted: completedSessions.length,
     focusSeconds,
     breakSeconds,
   };

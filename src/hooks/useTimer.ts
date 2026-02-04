@@ -9,6 +9,8 @@ const INITIAL_STATE: TimerState = {
   remainingSeconds: 0,
   sessionId: null,
   startTime: null,
+  completedAt: null,
+  exceededSeconds: 0,
 };
 
 export function useTimer() {
@@ -24,16 +26,36 @@ export function useTimer() {
 
   const tick = useCallback(() => {
     setState((prev) => {
-      if (prev.status !== 'running' || !prev.startTime) return prev;
+      if ((prev.status !== 'running' && prev.status !== 'exceeded') || !prev.startTime) return prev;
 
       const elapsed = (Date.now() - prev.startTime.getTime()) / 1000;
       const remaining = Math.max(0, Math.ceil(prev.totalDuration - elapsed));
 
-      if (remaining <= 0) {
+      if (remaining <= 0 && prev.status === 'running') {
+        const now = new Date();
+        setTimeout(() => onCompleteRef.current?.(), 0);
+
+        // For break mode, continue ticking to show exceeded time
+        if (prev.mode === 'break') {
+          return {
+            ...prev,
+            remainingSeconds: 0,
+            status: 'exceeded',
+            completedAt: now,
+            exceededSeconds: 0,
+          };
+        }
+
+        // For focus mode, just complete
         if (intervalRef.current) clearInterval(intervalRef.current);
         intervalRef.current = null;
-        setTimeout(() => onCompleteRef.current?.(), 0);
-        return { ...prev, remainingSeconds: 0, status: 'completed' };
+        return { ...prev, remainingSeconds: 0, status: 'completed', completedAt: now };
+      }
+
+      // If in exceeded state (break timer past deadline)
+      if (prev.status === 'exceeded' && prev.completedAt) {
+        const exceeded = Math.floor((Date.now() - prev.completedAt.getTime()) / 1000);
+        return { ...prev, exceededSeconds: exceeded };
       }
 
       return { ...prev, remainingSeconds: remaining };
@@ -52,6 +74,8 @@ export function useTimer() {
         remainingSeconds: duration,
         sessionId,
         startTime,
+        completedAt: null,
+        exceededSeconds: 0,
       });
 
       intervalRef.current = setInterval(tick, TIMER_TICK_INTERVAL);
@@ -78,6 +102,8 @@ export function useTimer() {
         remainingSeconds: remaining,
         sessionId,
         startTime: originalStartTime,
+        completedAt: null,
+        exceededSeconds: 0,
       });
 
       intervalRef.current = setInterval(tick, TIMER_TICK_INTERVAL);
@@ -99,8 +125,17 @@ export function useTimer() {
     setState(INITIAL_STATE);
   }, []);
 
+  const setTimerState = useCallback((newState: TimerState) => {
+    setState(newState);
+    // If setting to exceeded state, start the interval
+    if (newState.status === 'exceeded') {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(tick, TIMER_TICK_INTERVAL);
+    }
+  }, [tick]);
+
   const elapsedSeconds = state.totalDuration - state.remainingSeconds;
   const progress = state.totalDuration > 0 ? elapsedSeconds / state.totalDuration : 0;
 
-  return { state, start, resume, stop, reset, elapsedSeconds, progress };
+  return { state, start, resume, stop, reset, setState: setTimerState, elapsedSeconds, progress };
 }

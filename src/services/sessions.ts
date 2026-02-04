@@ -26,6 +26,7 @@ function toSession(id: string, data: Record<string, unknown>): Session {
     duration: data.duration as number,
     type: data.type as Session['type'],
     completed: data.completed as boolean,
+    interrupted: (data.interrupted as boolean) || false,
     completedAt: data.completedAt ? (data.completedAt as Timestamp).toDate() : null,
     createdAt: (data.createdAt as Timestamp).toDate(),
   };
@@ -43,6 +44,7 @@ export async function createSession(
     duration: input.duration,
     type: input.type,
     completed: false,
+    interrupted: false,
     completedAt: null,
     createdAt: serverTimestamp(),
   });
@@ -72,6 +74,7 @@ export async function savePartialSession(
   await updateDoc(sessionDoc, {
     duration: elapsedSeconds,
     completed: true,
+    interrupted: true,
     completedAt: serverTimestamp(),
   });
 }
@@ -105,6 +108,41 @@ export async function checkIncompleteSession(userId: string): Promise<
 
   const remaining = Math.ceil(data.duration - elapsed);
   return { status: 'resume', remaining, session };
+}
+
+export async function checkRecentBreakSession(userId: string): Promise<
+  | { status: 'none' }
+  | { status: 'exceeded'; session: Session; exceededSeconds: number }
+> {
+  // Check for break sessions completed in the last 2 hours (not interrupted)
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+  const q = query(
+    sessionsRef(userId),
+    where('completed', '==', true),
+    where('type', '==', 'break'),
+    where('interrupted', '==', false),
+    where('completedAt', '>=', Timestamp.fromDate(twoHoursAgo)),
+    orderBy('completedAt', 'desc'),
+    limit(1),
+  );
+
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return { status: 'none' };
+
+  const docSnap = snapshot.docs[0];
+  const data = docSnap.data();
+  const session = toSession(docSnap.id, data);
+
+  if (!session.completedAt) return { status: 'none' };
+
+  // Calculate how long ago the break ended (prevent negative values from clock skew)
+  const exceededSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - session.completedAt.getTime()) / 1000),
+  );
+
+  return { status: 'exceeded', session, exceededSeconds };
 }
 
 export async function querySessionsInRange(

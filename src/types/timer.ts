@@ -1,4 +1,4 @@
-export type TimerStatus = 'idle' | 'running' | 'completed';
+export type TimerStatus = 'idle' | 'running' | 'completed' | 'exceeded';
 export type TimerMode = 'focus' | 'break';
 export type AnimationPhase = 'seed' | 'sprouting' | 'growing' | 'complete';
 
@@ -9,4 +9,6 @@ export interface TimerState {
   remainingSeconds: number;
   sessionId: string | null;
   startTime: Date | null;
+  completedAt: Date | null; // When the timer reached 0
+  exceededSeconds: number; // Seconds past the end time (for break timer)
 }
