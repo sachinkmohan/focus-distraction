@@ -115,6 +115,13 @@ export function UnifiedTimerPage() {
     setPickerKey(prev => prev + 1); // Force DurationPicker to reset
   };
 
+  const handleDismissExceeded = async () => {
+    if (timer.state.sessionId) {
+      await session.dismissExceededSession(timer.state.sessionId);
+    }
+    handleNewSession();
+  };
+
   const handleModeSwitch = (mode: TimerMode) => {
     if (timer.state.status === 'running') return; // Can't switch during active timer
     setActiveMode(mode);
@@ -180,7 +187,7 @@ export function UnifiedTimerPage() {
           completedAt={timer.state.completedAt}
           exceededSeconds={timer.state.exceededSeconds}
           duration={timer.state.totalDuration}
-          onDismiss={handleNewSession}
+          onDismiss={handleDismissExceeded}
         />
       )}
 

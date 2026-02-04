@@ -7,6 +7,7 @@ import {
   savePartialSession,
   checkIncompleteSession,
   checkRecentBreakSession,
+  dismissSession,
 } from '@/services/sessions';
 import { addRecentDuration } from '@/services/templates';
 import type { SessionType } from '@/types';
@@ -60,5 +61,13 @@ export function useSession() {
     return checkRecentBreakSession(user.uid);
   }, [user]);
 
-  return { startSession, endSession, stopSession, checkIncomplete, checkRecentBreak };
+  const dismissExceededSession = useCallback(
+    async (sessionId: string) => {
+      if (!user) throw new Error('Not authenticated');
+      await dismissSession(user.uid, sessionId);
+    },
+    [user],
+  );
+
+  return { startSession, endSession, stopSession, checkIncomplete, checkRecentBreak, dismissExceededSession };
 }
