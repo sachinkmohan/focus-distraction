@@ -3,9 +3,10 @@ import { useTimer } from '@/hooks/useTimer';
 import { useSession } from '@/hooks/useSession';
 import { useRecentDurations } from '@/hooks/useRecentDurations';
 import { FOCUS_PRESETS, BREAK_PRESETS } from '@/utils/constants';
-import { DurationInput } from './DurationInput';
+import { DurationPicker } from './DurationPicker';
 import { QuickSelectButtons } from './QuickSelectButtons';
 import { TimerDisplay } from './TimerDisplay';
+import { ExceededTimerDisplay } from './ExceededTimerDisplay';
 import { TimerControls } from './TimerControls';
 import { SessionCompleteCard } from './SessionCompleteCard';
 import { TreeAnimation } from '@/components/tree/TreeAnimation';
@@ -26,24 +27,47 @@ export function UnifiedTimerPage() {
     }
   }, [timer.state.sessionId, session]);
 
-  // Check for incomplete sessions on mount
+  // Check for incomplete sessions and recent break sessions on mount
   useEffect(() => {
     if (checkedIncomplete) return;
 
     const check = async () => {
-      const result = await session.checkIncomplete();
-      if (result.status === 'resume') {
-        setActiveMode(result.session.type);
+      // First check for incomplete sessions
+      const incompleteResult = await session.checkIncomplete();
+      if (incompleteResult.status === 'resume') {
+        setActiveMode(incompleteResult.session.type);
         timer.resume(
-          result.remaining,
-          result.session.duration,
-          result.session.type,
-          result.session.id,
-          result.session.startTime,
+          incompleteResult.remaining,
+          incompleteResult.session.duration,
+          incompleteResult.session.type,
+          incompleteResult.session.id,
+          incompleteResult.session.startTime,
           () => handleComplete(),
         );
-        setSelectedDuration(result.session.duration);
+        setSelectedDuration(incompleteResult.session.duration);
+        setCheckedIncomplete(true);
+        return;
       }
+
+      // If no incomplete, check for recent break sessions that exceeded
+      const breakResult = await session.checkRecentBreak();
+      if (breakResult.status === 'exceeded') {
+        setActiveMode('break');
+        setSelectedDuration(breakResult.session.duration);
+
+        // Set timer to exceeded state
+        timer.setState({
+          status: 'exceeded',
+          mode: 'break',
+          totalDuration: breakResult.session.duration,
+          remainingSeconds: 0,
+          sessionId: breakResult.session.id,
+          startTime: breakResult.session.startTime,
+          completedAt: breakResult.session.completedAt,
+          exceededSeconds: breakResult.exceededSeconds,
+        });
+      }
+
       setCheckedIncomplete(true);
     };
 
@@ -81,6 +105,7 @@ export function UnifiedTimerPage() {
   const isIdle = timer.state.status === 'idle';
   const isRunning = timer.state.status === 'running';
   const isCompleted = timer.state.status === 'completed';
+  const isExceeded = timer.state.status === 'exceeded';
   const isFocus = activeMode === 'focus';
   const presets = isFocus ? FOCUS_PRESETS : BREAK_PRESETS;
 
@@ -130,6 +155,14 @@ export function UnifiedTimerPage() {
       {/* Timer Display - visible when running */}
       {isRunning && <TimerDisplay remainingSeconds={timer.state.remainingSeconds} mode={activeMode} />}
 
+      {/* Exceeded Display - for break timer after completion */}
+      {isExceeded && timer.state.completedAt && (
+        <ExceededTimerDisplay
+          completedAt={timer.state.completedAt}
+          exceededSeconds={timer.state.exceededSeconds}
+        />
+      )}
+
       {/* Completion card */}
       {isCompleted && selectedDuration && (
         <SessionCompleteCard
@@ -149,8 +182,8 @@ export function UnifiedTimerPage() {
             disabled={false}
             variant={activeMode}
           />
-          <DurationInput onDurationSelect={setSelectedDuration} disabled={false} />
-          {selectedDuration && (
+          <DurationPicker onDurationSelect={setSelectedDuration} disabled={false} />
+          {selectedDuration && selectedDuration > 0 && (
             <p className="text-center text-sm text-gray-500">
               Selected: {Math.floor(selectedDuration / 60)} min
               {selectedDuration % 60 > 0 ? ` ${selectedDuration % 60}s` : ''}
@@ -160,14 +193,24 @@ export function UnifiedTimerPage() {
       )}
 
       {/* Controls */}
-      {!isCompleted && (
+      {!isCompleted && !isExceeded && (
         <TimerControls
           status={timer.state.status}
           onStart={handleStart}
           onStop={handleStop}
-          canStart={isIdle && selectedDuration !== null}
+          canStart={isIdle && selectedDuration !== null && selectedDuration > 0}
           mode={activeMode}
         />
+      )}
+
+      {/* Exceeded state controls */}
+      {isExceeded && (
+        <button
+          onClick={handleNewSession}
+          className="w-full min-h-[48px] rounded-xl bg-green-600 px-6 py-3 text-lg font-semibold text-white hover:bg-green-700 active:bg-green-800"
+        >
+          Start New Session
+        </button>
       )}
     </div>
   );

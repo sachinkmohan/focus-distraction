@@ -6,6 +6,7 @@ export interface Session {
   duration: number; // in seconds
   type: SessionType;
   completed: boolean;
+  interrupted: boolean; // true if user stopped early
   completedAt: Date | null;
   createdAt: Date;
 }

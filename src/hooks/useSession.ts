@@ -6,6 +6,7 @@ import {
   cancelSession,
   savePartialSession,
   checkIncompleteSession,
+  checkRecentBreakSession,
 } from '@/services/sessions';
 import { addRecentDuration } from '@/services/templates';
 import type { SessionType } from '@/types';
@@ -54,5 +55,10 @@ export function useSession() {
     return checkIncompleteSession(user.uid);
   }, [user]);
 
-  return { startSession, endSession, stopSession, checkIncomplete };
+  const checkRecentBreak = useCallback(async () => {
+    if (!user) return { status: 'none' as const };
+    return checkRecentBreakSession(user.uid);
+  }, [user]);
+
+  return { startSession, endSession, stopSession, checkIncomplete, checkRecentBreak };
 }
