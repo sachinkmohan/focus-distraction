@@ -18,7 +18,7 @@
 ### Technical:
 - Added `checkRecentBreakSession()` to query completed breaks from last 2 hours
 - Timer state can be restored from database on any device
-- Added Firestore composite index: `completed + type + completedAt`
+- Added Firestore composite index: `completed + type + interrupted + completedAt`
 - Exceeded timer continues ticking after being restored
 - Works for up to 2 hours after break completion
 
