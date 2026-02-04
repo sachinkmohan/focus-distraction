@@ -27,6 +27,7 @@ function toSession(id: string, data: Record<string, unknown>): Session {
     type: data.type as Session['type'],
     completed: data.completed as boolean,
     interrupted: (data.interrupted as boolean) || false,
+    dismissed: (data.dismissed as boolean) || false,
     completedAt: data.completedAt ? (data.completedAt as Timestamp).toDate() : null,
     createdAt: (data.createdAt as Timestamp).toDate(),
   };
@@ -45,6 +46,7 @@ export async function createSession(
     type: input.type,
     completed: false,
     interrupted: false,
+    dismissed: false,
     completedAt: null,
     createdAt: serverTimestamp(),
   });
@@ -76,6 +78,13 @@ export async function savePartialSession(
     completed: true,
     interrupted: true,
     completedAt: serverTimestamp(),
+  });
+}
+
+export async function dismissSession(userId: string, sessionId: string): Promise<void> {
+  const sessionDoc = doc(db, `users/${userId}/sessions/${sessionId}`);
+  await updateDoc(sessionDoc, {
+    dismissed: true,
   });
 }
 
@@ -122,6 +131,7 @@ export async function checkRecentBreakSession(userId: string): Promise<
     where('completed', '==', true),
     where('type', '==', 'break'),
     where('interrupted', '==', false),
+    where('dismissed', '==', false),
     where('completedAt', '>=', Timestamp.fromDate(twoHoursAgo)),
     orderBy('completedAt', 'desc'),
     limit(1),
