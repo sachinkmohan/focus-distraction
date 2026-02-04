@@ -174,6 +174,7 @@ export function UnifiedTimerPage() {
         <ExceededTimerDisplay
           completedAt={timer.state.completedAt}
           exceededSeconds={timer.state.exceededSeconds}
+          duration={timer.state.totalDuration}
         />
       )}
 
