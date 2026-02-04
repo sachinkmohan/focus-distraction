@@ -1,16 +1,17 @@
-import { formatCountdown } from '@/utils/duration';
+import { formatCountdown, formatDurationLabel } from '@/utils/duration';
 import { format } from 'date-fns';
 
 interface ExceededTimerDisplayProps {
   completedAt: Date;
   exceededSeconds: number;
+  duration: number;
 }
 
-export function ExceededTimerDisplay({ completedAt, exceededSeconds }: ExceededTimerDisplayProps) {
+export function ExceededTimerDisplay({ completedAt, exceededSeconds, duration }: ExceededTimerDisplayProps) {
   return (
     <div className="flex flex-col items-center gap-3 py-4">
       <div className="text-center">
-        <p className="text-sm text-gray-600">Break ended at</p>
+        <p className="text-sm text-gray-600">{formatDurationLabel(duration)} break ended at</p>
         <p className="text-lg font-semibold text-gray-900">
           {format(completedAt, 'h:mm a')}
         </p>
