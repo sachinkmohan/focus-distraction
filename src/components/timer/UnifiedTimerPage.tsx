@@ -21,6 +21,10 @@ export function UnifiedTimerPage() {
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [checkedIncomplete, setCheckedIncomplete] = useState(false);
 
+  const handleDurationSelect = (duration: number) => {
+    setSelectedDuration(duration);
+  };
+
   const handleComplete = useCallback(async () => {
     if (timer.state.sessionId) {
       await session.endSession(timer.state.sessionId);
@@ -74,13 +78,20 @@ export function UnifiedTimerPage() {
     check();
   }, [checkedIncomplete, session, timer, handleComplete]);
 
-  const handleStart = async () => {
-    if (!selectedDuration) return;
+  const handleStart = async (duration?: number) => {
+    const durationToUse = duration || selectedDuration;
+    if (!durationToUse || typeof durationToUse !== 'number') return;
 
-    const { sessionId, startTime } = await session.startSession(selectedDuration, activeMode);
-    timer.start(selectedDuration, activeMode, sessionId, startTime, async () => {
+    const { sessionId, startTime } = await session.startSession(durationToUse, activeMode);
+    timer.start(durationToUse, activeMode, sessionId, startTime, async () => {
       await session.endSession(sessionId);
     });
+  };
+
+  const handleQuickStart = async (duration: number) => {
+    if (typeof duration !== 'number') return;
+    setSelectedDuration(duration);
+    await handleStart(duration);
   };
 
   const handleStop = async () => {
@@ -91,9 +102,12 @@ export function UnifiedTimerPage() {
     setSelectedDuration(null);
   };
 
+  const [pickerKey, setPickerKey] = useState(0);
+
   const handleNewSession = () => {
     timer.reset();
     setSelectedDuration(null);
+    setPickerKey(prev => prev + 1); // Force DurationPicker to reset
   };
 
   const handleModeSwitch = (mode: TimerMode) => {
@@ -175,14 +189,19 @@ export function UnifiedTimerPage() {
       {/* Duration selection - visible when idle */}
       {isIdle && (
         <>
-          <QuickSelectButtons
-            presets={presets}
-            recentDurations={recentDurations}
-            onSelect={setSelectedDuration}
-            disabled={false}
-            variant={activeMode}
-          />
-          <DurationPicker onDurationSelect={setSelectedDuration} disabled={false} />
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-gray-600 text-center">Quick Start</p>
+            <QuickSelectButtons
+              presets={presets}
+              recentDurations={recentDurations}
+              onSelect={handleQuickStart}
+              disabled={false}
+              variant={activeMode}
+            />
+          </div>
+          <div className="border-t border-gray-200 pt-4">
+            <DurationPicker key={pickerKey} onDurationSelect={handleDurationSelect} disabled={false} />
+          </div>
           {selectedDuration && selectedDuration > 0 && (
             <p className="text-center text-sm text-gray-500">
               Selected: {Math.floor(selectedDuration / 60)} min

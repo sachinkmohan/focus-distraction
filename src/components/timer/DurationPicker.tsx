@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 interface DurationPickerProps {
   onDurationSelect: (seconds: number) => void;
   disabled: boolean;
+  key?: string | number; // Allow parent to reset by changing key
 }
 
 export function DurationPicker({ onDurationSelect, disabled }: DurationPickerProps) {
@@ -16,10 +17,10 @@ export function DurationPicker({ onDurationSelect, disabled }: DurationPickerPro
     const s = parseInt(seconds) || 0;
     const total = h * 3600 + m * 60 + s;
 
-    if (total > 0) {
+    if (total > 0 && Number.isFinite(total)) {
       onDurationSelect(total);
     }
-  }, [hours, minutes, seconds, onDurationSelect]);
+  }, [hours, minutes, seconds]);
 
   const handleNumberInput = (
     value: string,

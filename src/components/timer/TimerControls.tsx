@@ -12,7 +12,7 @@ export function TimerControls({ status, onStart, onStop, canStart, mode }: Timer
   if (status === 'running') {
     return (
       <button
-        onClick={onStop}
+        onClick={() => onStop()}
         className="w-full min-h-[48px] rounded-xl bg-red-500 px-6 py-3 text-lg font-semibold text-white hover:bg-red-600 active:bg-red-700"
       >
         Stop
@@ -24,7 +24,7 @@ export function TimerControls({ status, onStart, onStop, canStart, mode }: Timer
 
   return (
     <button
-      onClick={onStart}
+      onClick={() => onStart()}
       disabled={!canStart}
       className={`w-full min-h-[48px] rounded-xl px-6 py-3 text-lg font-semibold text-white disabled:opacity-40 ${
         isFocus
