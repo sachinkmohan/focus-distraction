@@ -82,6 +82,11 @@ export function UnifiedTimerPage() {
     const durationToUse = duration || selectedDuration;
     if (!durationToUse || typeof durationToUse !== 'number') return;
 
+    // Clear exceeded state if present
+    if (timer.state.status === 'exceeded') {
+      timer.reset();
+    }
+
     const { sessionId, startTime } = await session.startSession(durationToUse, activeMode);
     timer.start(durationToUse, activeMode, sessionId, startTime, async () => {
       await session.endSession(sessionId);
@@ -175,6 +180,7 @@ export function UnifiedTimerPage() {
           completedAt={timer.state.completedAt}
           exceededSeconds={timer.state.exceededSeconds}
           duration={timer.state.totalDuration}
+          onDismiss={handleNewSession}
         />
       )}
 
@@ -221,16 +227,6 @@ export function UnifiedTimerPage() {
           canStart={isIdle && selectedDuration !== null && selectedDuration > 0}
           mode={activeMode}
         />
-      )}
-
-      {/* Exceeded state controls */}
-      {isExceeded && (
-        <button
-          onClick={handleNewSession}
-          className="w-full min-h-[48px] rounded-xl bg-green-600 px-6 py-3 text-lg font-semibold text-white hover:bg-green-700 active:bg-green-800"
-        >
-          Start New Session
-        </button>
       )}
     </div>
   );
