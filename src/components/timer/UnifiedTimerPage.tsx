@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTimer } from '@/hooks/useTimer';
 import { useSession } from '@/hooks/useSession';
 import { useRecentDurations } from '@/hooks/useRecentDurations';
+import { useSettings } from '@/hooks/useSettings';
 import { FOCUS_PRESETS, BREAK_PRESETS } from '@/utils/constants';
+import { CHECKIN_INTERVAL_OPTIONS } from '@/types/settings';
 import { DurationPicker } from './DurationPicker';
 import { QuickSelectButtons } from './QuickSelectButtons';
 import { TimerDisplay } from './TimerDisplay';
@@ -16,6 +18,7 @@ export function UnifiedTimerPage() {
   const timer = useTimer();
   const session = useSession();
   const { durations: recentDurations } = useRecentDurations();
+  const { settings, updateSettings } = useSettings();
 
   const [activeMode, setActiveMode] = useState<TimerMode>('focus');
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
@@ -168,6 +171,21 @@ export function UnifiedTimerPage() {
     }
   };
 
+  const handleIntervalChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newInterval = parseInt(event.target.value, 10);
+    await updateSettings({ checkinBonusInterval: newInterval });
+
+    // Refresh check-in status to show updated calculations
+    const status = await session.getCheckInStatus();
+    if (status) {
+      setCheckinStatus({
+        used: status.used,
+        limit: status.limit,
+        minutesToNextBonus: status.minutesToNextBonus,
+      });
+    }
+  };
+
   const handleModeSwitch = (mode: TimerMode) => {
     if (timer.state.status === 'running') return; // Can't switch during active timer
     setActiveMode(mode);
@@ -247,6 +265,25 @@ export function UnifiedTimerPage() {
               <p className="text-sm text-indigo-600 mt-2">
                 {checkinStatus.minutesToNextBonus} more min to earn next bonus
               </p>
+
+              {/* Bonus Interval Dropdown */}
+              <div className="mt-4 w-full max-w-xs">
+                <label htmlFor="bonus-interval" className="block text-xs text-gray-600 mb-1">
+                  Earn bonus check-in every:
+                </label>
+                <select
+                  id="bonus-interval"
+                  value={settings.checkinBonusInterval}
+                  onChange={handleIntervalChange}
+                  className="w-full min-h-[44px] px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  {CHECKIN_INTERVAL_OPTIONS.map((minutes) => (
+                    <option key={minutes} value={minutes}>
+                      {minutes} minutes
+                    </option>
+                  ))}
+                </select>
+              </div>
             </>
           )}
         </div>

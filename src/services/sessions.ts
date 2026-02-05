@@ -16,6 +16,7 @@ import { db } from '@/config/firebase';
 import type { Session, CreateSessionInput } from '@/types';
 import { CHECKIN_BASE_LIMIT } from '@/utils/constants';
 import { getTodayRange } from '@/utils/date';
+import { getUserSettings } from './settings';
 
 function sessionsRef(userId: string) {
   return collection(db, `users/${userId}/sessions`);
@@ -90,7 +91,10 @@ export async function dismissSession(userId: string, sessionId: string): Promise
   });
 }
 
-export async function canCheckIn(userId: string): Promise<{
+export async function canCheckIn(
+  userId: string,
+  intervalMinutes?: number,
+): Promise<{
   allowed: boolean;
   used: number;
   limit: number;
@@ -104,13 +108,22 @@ export async function canCheckIn(userId: string): Promise<{
     .reduce((sum, s) => sum + s.duration, 0);
 
   const used = sessions.filter((s) => s.type === 'checkin').length;
-  const bonuses = Math.floor(focusSeconds / 1800); // 1800 = 30 min in seconds
+
+  // If interval not provided, get from user settings
+  let bonusInterval = intervalMinutes;
+  if (!bonusInterval) {
+    const settings = await getUserSettings(userId);
+    bonusInterval = settings.checkinBonusInterval;
+  }
+
+  const bonusIntervalSeconds = bonusInterval * 60;
+  const bonuses = Math.floor(focusSeconds / bonusIntervalSeconds);
   const limit = CHECKIN_BASE_LIMIT + bonuses;
 
   // Calculate progress toward next bonus
   const focusMinutes = Math.floor(focusSeconds / 60);
-  const progressInCurrentBonus = focusMinutes % 30; // 0-29 minutes
-  const minutesToNextBonus = 30 - progressInCurrentBonus;
+  const progressInCurrentBonus = focusMinutes % bonusInterval;
+  const minutesToNextBonus = bonusInterval - progressInCurrentBonus;
 
   return { allowed: used < limit, used, limit, minutesToNextBonus };
 }

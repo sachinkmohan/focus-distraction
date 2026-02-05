@@ -1,7 +1,8 @@
 import type { Session } from '@/types';
 import { querySessionsInRange } from './sessions';
 import { getTodayRange, getThisWeekRange, getLast4WeeksRanges } from '@/utils/date';
-import { CHECKIN_BASE_LIMIT, CHECKIN_BONUS_INTERVAL } from '@/utils/constants';
+import { CHECKIN_BASE_LIMIT } from '@/utils/constants';
+import { getUserSettings } from './settings';
 
 export interface StatsSummary {
   sessionsCompleted: number;
@@ -12,8 +13,10 @@ export interface StatsSummary {
 }
 
 function summarize(sessions: Session[]): StatsSummary {
-  // Only count sessions that were completed fully (not interrupted)
-  const completedSessions = sessions.filter((s) => !s.interrupted);
+  // Only count focus sessions that were completed fully (not interrupted)
+  const completedFocusSessions = sessions.filter(
+    (s) => s.type === 'focus' && !s.interrupted
+  );
 
   // But include ALL sessions (interrupted or not) for time tracking
   const focusSeconds = sessions
@@ -25,14 +28,17 @@ function summarize(sessions: Session[]): StatsSummary {
   const checkinsUsed = sessions.filter((s) => s.type === 'checkin').length;
 
   return {
-    sessionsCompleted: completedSessions.length,
+    sessionsCompleted: completedFocusSessions.length,
     focusSeconds,
     breakSeconds,
     checkinsUsed,
   };
 }
 
-export async function getCheckinsAllowed(userId: string): Promise<number> {
+export async function getCheckinsAllowed(
+  userId: string,
+  intervalMinutes?: number,
+): Promise<number> {
   const { start, end } = getTodayRange();
   const sessions = await querySessionsInRange(userId, start, end);
 
@@ -40,7 +46,15 @@ export async function getCheckinsAllowed(userId: string): Promise<number> {
     .filter((s) => s.type === 'focus')
     .reduce((sum, s) => sum + s.duration, 0);
 
-  const bonuses = Math.floor(focusSeconds / CHECKIN_BONUS_INTERVAL);
+  // If interval not provided, get from user settings
+  let bonusInterval = intervalMinutes;
+  if (!bonusInterval) {
+    const settings = await getUserSettings(userId);
+    bonusInterval = settings.checkinBonusInterval;
+  }
+
+  const bonusIntervalSeconds = bonusInterval * 60;
+  const bonuses = Math.floor(focusSeconds / bonusIntervalSeconds);
   return CHECKIN_BASE_LIMIT + bonuses;
 }
 

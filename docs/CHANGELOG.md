@@ -1,5 +1,152 @@
 # Changelog
 
+## 2026-02-05 - Update 6: Configurable Check-in Bonus Interval
+
+### Features Added
+
+**User-Configurable Check-in Interval**
+- Added settings dropdown in Check-in mode
+- Choose bonus interval: 10, 15, 20, 25, or 30 minutes
+- Setting persisted per user in Firestore
+- Real-time recalculation of bonuses and progress
+- Default: 30 minutes (maintains current behavior for existing users)
+
+### How It Works
+
+**Customizing Your Bonus Interval:**
+1. Navigate to Check-in mode
+2. Find dropdown below "minutes to earn next bonus"
+3. Select your preferred interval from 10-30 minutes
+4. Progress and bonus calculations update immediately
+
+**Example Impact:**
+- **10 min interval**: 60 min focus → 6 bonuses → 9 total check-ins (3 base + 6)
+- **15 min interval**: 60 min focus → 4 bonuses → 7 total check-ins (3 base + 4)
+- **20 min interval**: 60 min focus → 3 bonuses → 6 total check-ins (3 base + 3)
+- **25 min interval**: 60 min focus → 2 bonuses → 5 total check-ins (3 base + 2)
+- **30 min interval**: 60 min focus → 2 bonuses → 5 total check-ins (3 base + 2)
+
+**Why This Matters:**
+- Shorter intervals = more frequent bonuses = better for rapid check-in cycles
+- Longer intervals = fewer bonuses = works well with extended focus sessions
+- Customize to match your personal work style
+
+### Improvements
+
+- **Fixed hardcoded bug**: `canCheckIn()` had `1800` hardcoded instead of using constant
+- **Dynamic calculations**: All bonus and progress calculations now use user setting
+- **Settings infrastructure**: Created reusable settings system for future preferences
+
+### Technical
+
+**New Infrastructure:**
+- Created `UserSettings` type with `checkinBonusInterval` field
+- Added `services/settings.ts` with `getUserSettings()` and `updateUserSettings()`
+- Created `useSettings()` hook following existing patterns
+- Firestore storage: `users/{userId}/settings/data`
+
+**Service Updates:**
+- `canCheckIn()` now accepts optional `intervalMinutes` parameter
+- `getCheckinsAllowed()` loads interval from user settings
+- Progress calculation uses dynamic modulo arithmetic
+
+**Files Created:**
+- `src/types/settings.ts` - Settings type definitions and constants
+- `src/services/settings.ts` - Firestore settings service
+- `src/hooks/useSettings.ts` - Settings React hook
+
+**Files Modified:**
+- `src/types/index.ts` - Added settings export
+- `src/services/sessions.ts` - Dynamic interval in canCheckIn(), fixed hardcoded 1800
+- `src/services/stats.ts` - Dynamic interval in getCheckinsAllowed()
+- `src/components/timer/UnifiedTimerPage.tsx` - Added interval dropdown UI
+
+### Migration Notes
+
+- No database migration required
+- Existing users automatically default to 30 minutes
+- Settings document created only when user first changes interval
+- Zero breaking changes to existing functionality
+
+---
+
+## 2026-02-05 - Update 5: Check-ins Feature & Stats Improvements
+
+### Features Added
+
+1. **Check-ins Mode**
+   - Added third timer mode alongside Focus and Break
+   - Instant action button (no timer countdown)
+   - Base daily limit: 3 check-ins
+   - Bonus system: +1 check-in per 30 minutes of focus time
+   - Progress indicator showing minutes to next bonus check-in
+   - Stats integration across all time periods
+
+2. **Focus Timer Completion Display**
+   - Focus timers now show completion time (like break timers)
+   - Displays when the session ended (e.g., "Focus ended at 2:30 PM")
+   - Shows time elapsed since completion
+   - Green styling for celebration ("Great work! Time to take a break.")
+
+3. **Manual Time Increment**
+   - Added +5m buttons on Today's stats card
+   - Quick way to add 5 minutes of focus or break time
+   - Useful for sessions done outside the app
+   - Automatically refreshes stats after adding time
+
+4. **Yesterday Stats Card**
+   - New stats card between Today and This Week
+   - Easy day-to-day comparison
+   - Shows all metrics: Sessions, Focus, Break, Check-ins
+
+### Improvements
+
+- **Fixed session count logic**: Only completed focus sessions count toward "Sessions" metric
+  - Breaks and check-ins have their own separate metrics
+  - More intuitive and semantically clear
+- **Removed misleading denominators**: Weekly/historical check-in stats now show just count (e.g., "15 check-ins" instead of "15/21")
+  - Today still shows "X/Y" format with actual daily allowance
+- **Fixed infinite Firestore requests**: Resolved continuous polling on check-in page
+
+### How It Works
+
+**Check-ins:**
+- Start with 3 check-ins per day
+- Complete 30 minutes of focus → earn +1 bonus check-in
+- Complete 60 minutes → +2 bonus check-ins (total: 5/5 available)
+- Progress indicator: "15 more min to earn next bonus"
+
+**Stats Display:**
+- **Sessions**: Only completed focus sessions
+- **Focus**: All focus time (including interrupted)
+- **Break**: All break time (including interrupted)
+- **Check-ins**: Count of instant check-in actions
+
+### Technical
+
+- Extended `TimerMode` and `SessionType` to include 'checkin'
+- Added `canCheckIn()` and `createCheckin()` to sessions service
+- Check-ins stored as sessions with `duration: 0`
+- Added `getYesterdayStats()` for historical comparison
+- Updated `ExceededTimerDisplay` with mode-specific styling
+- Added `addManualTime()` service for manual time entry
+- Fixed useEffect dependency array to prevent infinite loops
+
+### Files Modified
+- `src/types/timer.ts` - Extended TimerMode type
+- `src/types/session.ts` - Extended SessionType type
+- `src/utils/constants.ts` - Added check-in constants
+- `src/services/sessions.ts` - Added check-in and manual time functions
+- `src/services/stats.ts` - Added yesterday stats, updated session counting
+- `src/hooks/useSession.ts` - Added check-in and manual time methods
+- `src/hooks/useStats.ts` - Added yesterday to state and fetch
+- `src/components/timer/UnifiedTimerPage.tsx` - Added check-in mode UI
+- `src/components/timer/ExceededTimerDisplay.tsx` - Added mode-specific styling
+- `src/components/stats/StatCard.tsx` - Added manual time buttons, removed denominators
+- `src/components/stats/StatsPage.tsx` - Added yesterday card display
+
+---
+
 ## 2026-02-04 - Update 4: Cross-Device Exceeded Time Tracking
 
 ### Features Added
