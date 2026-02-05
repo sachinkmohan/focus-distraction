@@ -1,5 +1,5 @@
 // Valid interval options for the dropdown
-export const CHECKIN_INTERVAL_OPTIONS = [10, 15, 20, 25, 30] as const;
+export const CHECKIN_INTERVAL_OPTIONS = [10, 15, 20, 25, 30, 45, 60] as const;
 
 // Derive the type from the valid options for compile-time type safety
 export type CheckinBonusInterval = typeof CHECKIN_INTERVAL_OPTIONS[number];

@@ -130,8 +130,31 @@ export async function canCheckIn(
 }
 
 export async function createCheckin(userId: string): Promise<{ sessionId: string }> {
-  // Use transaction to atomically check limit and create check-in
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const lockDoc = doc(db, `users/${userId}/locks/checkin-${today}`);
+
+  // Use transaction with distributed lock to prevent race conditions
   const sessionId = await runTransaction(db, async (transaction) => {
+    // Acquire lock atomically using transaction.get()
+    const lockSnap = await transaction.get(lockDoc);
+
+    if (lockSnap.exists()) {
+      const lockData = lockSnap.data();
+      const lockAge = Date.now() - lockData.timestamp;
+
+      // If lock is held and fresh (< 5 seconds), reject
+      if (lockAge < 5000) {
+        throw new Error('Another check-in is in progress, please try again');
+      }
+      // Otherwise lock is stale, we can proceed
+    }
+
+    // Set lock
+    transaction.set(lockDoc, {
+      timestamp: Date.now(),
+      userId,
+    });
+
     // Query current sessions to check limit
     const { start, end } = getTodayRange();
     const q = query(
@@ -161,7 +184,7 @@ export async function createCheckin(userId: string): Promise<{ sessionId: string
       throw new Error('Check-in limit reached for today');
     }
 
-    // Create check-in document atomically
+    // Create check-in document
     const sessionDoc = doc(sessionsRef(userId));
     const now = new Date();
 
@@ -178,6 +201,14 @@ export async function createCheckin(userId: string): Promise<{ sessionId: string
 
     return sessionDoc.id;
   });
+
+  // Release lock after transaction completes
+  try {
+    await deleteDoc(lockDoc);
+  } catch (error) {
+    // Lock deletion is best-effort, stale locks auto-expire after 5s
+    console.warn('Failed to release check-in lock:', error);
+  }
 
   return { sessionId };
 }
