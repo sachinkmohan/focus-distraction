@@ -1,10 +1,22 @@
 import { useStats } from '@/hooks/useStats';
+import { useSession } from '@/hooks/useSession';
 import { StatCard } from './StatCard';
 import { useNavigate } from 'react-router-dom';
 
 export function StatsPage() {
-  const { today, thisWeek, last4Weeks, loading } = useStats();
+  const { today, yesterday, thisWeek, last4Weeks, loading, refresh } = useStats();
+  const session = useSession();
   const navigate = useNavigate();
+
+  const handleAddFocusTime = async () => {
+    await session.addManualTime('focus', 300); // 5 minutes
+    refresh();
+  };
+
+  const handleAddBreakTime = async () => {
+    await session.addManualTime('break', 300); // 5 minutes
+    refresh();
+  };
 
   if (loading) {
     return (
@@ -26,7 +38,15 @@ export function StatsPage() {
         </button>
       </div>
 
-      {today && <StatCard title="Today" stats={today} />}
+      {today && (
+        <StatCard
+          title="Today"
+          stats={today}
+          onAddFocusTime={handleAddFocusTime}
+          onAddBreakTime={handleAddBreakTime}
+        />
+      )}
+      {yesterday && <StatCard title="Yesterday" stats={yesterday} />}
       {thisWeek && <StatCard title="This Week" stats={thisWeek} />}
 
       {last4Weeks && last4Weeks.length > 0 && (

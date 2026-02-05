@@ -14,6 +14,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import type { Session, CreateSessionInput } from '@/types';
+import { CHECKIN_BASE_LIMIT } from '@/utils/constants';
+import { getTodayRange } from '@/utils/date';
 
 function sessionsRef(userId: string) {
   return collection(db, `users/${userId}/sessions`);
@@ -85,6 +87,74 @@ export async function dismissSession(userId: string, sessionId: string): Promise
   const sessionDoc = doc(db, `users/${userId}/sessions/${sessionId}`);
   await updateDoc(sessionDoc, {
     dismissed: true,
+  });
+}
+
+export async function canCheckIn(userId: string): Promise<{
+  allowed: boolean;
+  used: number;
+  limit: number;
+  minutesToNextBonus: number;
+}> {
+  const { start, end } = getTodayRange();
+  const sessions = await querySessionsInRange(userId, start, end);
+
+  const focusSeconds = sessions
+    .filter((s) => s.type === 'focus')
+    .reduce((sum, s) => sum + s.duration, 0);
+
+  const used = sessions.filter((s) => s.type === 'checkin').length;
+  const bonuses = Math.floor(focusSeconds / 1800); // 1800 = 30 min in seconds
+  const limit = CHECKIN_BASE_LIMIT + bonuses;
+
+  // Calculate progress toward next bonus
+  const focusMinutes = Math.floor(focusSeconds / 60);
+  const progressInCurrentBonus = focusMinutes % 30; // 0-29 minutes
+  const minutesToNextBonus = 30 - progressInCurrentBonus;
+
+  return { allowed: used < limit, used, limit, minutesToNextBonus };
+}
+
+export async function createCheckin(userId: string): Promise<{ sessionId: string }> {
+  const { allowed } = await canCheckIn(userId);
+  if (!allowed) {
+    throw new Error('Check-in limit reached for today');
+  }
+
+  const sessionDoc = doc(sessionsRef(userId));
+  const now = new Date();
+
+  await setDoc(sessionDoc, {
+    startTime: Timestamp.fromDate(now),
+    duration: 0,
+    type: 'checkin',
+    completed: true,
+    interrupted: false,
+    dismissed: false,
+    completedAt: Timestamp.fromDate(now),
+    createdAt: serverTimestamp(),
+  });
+
+  return { sessionId: sessionDoc.id };
+}
+
+export async function addManualTime(
+  userId: string,
+  type: 'focus' | 'break',
+  durationSeconds: number,
+): Promise<void> {
+  const sessionDoc = doc(sessionsRef(userId));
+  const now = new Date();
+
+  await setDoc(sessionDoc, {
+    startTime: Timestamp.fromDate(now),
+    duration: durationSeconds,
+    type,
+    completed: true,
+    interrupted: false,
+    dismissed: false,
+    completedAt: Timestamp.fromDate(now),
+    createdAt: serverTimestamp(),
   });
 }
 

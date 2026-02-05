@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { formatDurationLabel } from '@/utils/duration';
+import type { TimerMode } from '@/types';
 
 interface SessionCompleteCardProps {
   duration: number;
-  mode: 'focus' | 'break';
+  mode: TimerMode;
   onNewSession: () => void;
 }
 

@@ -4,9 +4,11 @@ import { formatHoursMinutes } from '@/utils/format';
 interface StatCardProps {
   title: string;
   stats: StatsSummary;
+  onAddFocusTime?: () => void;
+  onAddBreakTime?: () => void;
 }
 
-export function StatCard({ title, stats }: StatCardProps) {
+export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatCardProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <h3 className="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">{title}</h3>
@@ -18,10 +20,36 @@ export function StatCard({ title, stats }: StatCardProps) {
         <div>
           <p className="text-xl font-bold text-green-700">{formatHoursMinutes(stats.focusSeconds)}</p>
           <p className="text-xs text-gray-500">Focus</p>
+          {onAddFocusTime && (
+            <button
+              onClick={onAddFocusTime}
+              className="mt-1 px-2 py-0.5 text-xs font-medium text-green-600 hover:text-green-800 hover:bg-green-50 rounded"
+            >
+              +5m
+            </button>
+          )}
         </div>
         <div>
           <p className="text-xl font-bold text-blue-700">{formatHoursMinutes(stats.breakSeconds)}</p>
           <p className="text-xs text-gray-500">Break</p>
+          {onAddBreakTime && (
+            <button
+              onClick={onAddBreakTime}
+              className="mt-1 px-2 py-0.5 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+            >
+              +5m
+            </button>
+          )}
+        </div>
+      </div>
+      {/* Check-in stats */}
+      <div className="mt-3 pt-3 border-t border-gray-100">
+        <div className="text-center">
+          <p className="text-2xl font-bold text-indigo-700">
+            {stats.checkinsUsed}
+            {stats.checkinsAllowed !== undefined && `/${stats.checkinsAllowed}`}
+          </p>
+          <p className="text-xs text-gray-500">Check-ins</p>
         </div>
       </div>
     </div>
