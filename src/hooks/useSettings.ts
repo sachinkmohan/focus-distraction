@@ -24,9 +24,16 @@ export function useSettings(): UseSettingsReturn {
     }
 
     setLoading(true);
-    const userSettings = await getUserSettings(user.uid);
-    setSettings(userSettings);
-    setLoading(false);
+    try {
+      const userSettings = await getUserSettings(user.uid);
+      setSettings(userSettings);
+    } catch (error) {
+      console.error('Failed to load user settings:', error);
+      // Fall back to defaults on error
+      setSettings(DEFAULT_SETTINGS);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
   const updateSettings = useCallback(

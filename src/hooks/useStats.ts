@@ -30,14 +30,26 @@ export function useStats() {
     if (!user) return;
     setStats((prev) => ({ ...prev, loading: true }));
 
-    const [today, yesterday, thisWeek, last4Weeks] = await Promise.all([
-      getTodayStats(user.uid),
-      getYesterdayStats(user.uid),
-      getThisWeekStats(user.uid),
-      getLast4WeeksStats(user.uid),
-    ]);
+    try {
+      const [today, yesterday, thisWeek, last4Weeks] = await Promise.all([
+        getTodayStats(user.uid),
+        getYesterdayStats(user.uid),
+        getThisWeekStats(user.uid),
+        getLast4WeeksStats(user.uid),
+      ]);
 
-    setStats({ today, yesterday, thisWeek, last4Weeks, loading: false });
+      setStats({ today, yesterday, thisWeek, last4Weeks, loading: false });
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+      // Reset to null values on error but keep loading as false
+      setStats({
+        today: null,
+        yesterday: null,
+        thisWeek: null,
+        last4Weeks: null,
+        loading: false,
+      });
+    }
   }, [user]);
 
   useEffect(() => {

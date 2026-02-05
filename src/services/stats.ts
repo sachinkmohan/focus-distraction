@@ -35,16 +35,29 @@ function summarize(sessions: Session[]): StatsSummary {
   };
 }
 
+/**
+ * Calculate check-ins allowed from already-fetched sessions.
+ * This helper avoids duplicate queries when sessions are already loaded.
+ */
+function calculateCheckinsAllowed(
+  sessions: Session[],
+  intervalMinutes: number,
+): number {
+  const focusSeconds = sessions
+    .filter((s) => s.type === 'focus')
+    .reduce((sum, s) => sum + s.duration, 0);
+
+  const bonusIntervalSeconds = intervalMinutes * 60;
+  const bonuses = Math.floor(focusSeconds / bonusIntervalSeconds);
+  return CHECKIN_BASE_LIMIT + bonuses;
+}
+
 export async function getCheckinsAllowed(
   userId: string,
   intervalMinutes?: number,
 ): Promise<number> {
   const { start, end } = getTodayRange();
   const sessions = await querySessionsInRange(userId, start, end);
-
-  const focusSeconds = sessions
-    .filter((s) => s.type === 'focus')
-    .reduce((sum, s) => sum + s.duration, 0);
 
   // If interval not provided, get from user settings
   let bonusInterval = intervalMinutes;
@@ -53,16 +66,18 @@ export async function getCheckinsAllowed(
     bonusInterval = settings.checkinBonusInterval;
   }
 
-  const bonusIntervalSeconds = bonusInterval * 60;
-  const bonuses = Math.floor(focusSeconds / bonusIntervalSeconds);
-  return CHECKIN_BASE_LIMIT + bonuses;
+  return calculateCheckinsAllowed(sessions, bonusInterval);
 }
 
 export async function getTodayStats(userId: string): Promise<StatsSummary> {
   const { start, end } = getTodayRange();
   const sessions = await querySessionsInRange(userId, start, end);
   const summary = summarize(sessions);
-  summary.checkinsAllowed = await getCheckinsAllowed(userId);
+
+  // Get user settings to calculate check-ins allowed from already-fetched sessions
+  const settings = await getUserSettings(userId);
+  summary.checkinsAllowed = calculateCheckinsAllowed(sessions, settings.checkinBonusInterval);
+
   return summary;
 }
 

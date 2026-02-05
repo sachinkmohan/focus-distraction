@@ -23,7 +23,7 @@ export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatC
           {onAddFocusTime && (
             <button
               onClick={onAddFocusTime}
-              className="mt-1 px-2 py-0.5 text-xs font-medium text-green-600 hover:text-green-800 hover:bg-green-50 rounded"
+              className="mt-1 min-h-[44px] min-w-[44px] px-3 py-2 text-xs font-medium text-green-600 hover:text-green-800 hover:bg-green-50 rounded"
             >
               +5m
             </button>
@@ -35,7 +35,7 @@ export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatC
           {onAddBreakTime && (
             <button
               onClick={onAddBreakTime}
-              className="mt-1 px-2 py-0.5 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+              className="mt-1 min-h-[44px] min-w-[44px] px-3 py-2 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
             >
               +5m
             </button>

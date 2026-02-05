@@ -1,4 +1,4 @@
-export type TimerStatus = 'idle' | 'running' | 'completed' | 'exceeded';
+export type TimerStatus = 'idle' | 'running' | 'exceeded';
 export type TimerMode = 'focus' | 'break' | 'checkin';
 export type AnimationPhase = 'seed' | 'sprouting' | 'growing' | 'complete';
 

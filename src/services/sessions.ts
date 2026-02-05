@@ -11,6 +11,7 @@ import {
   getDocs,
   serverTimestamp,
   Timestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import type { Session, CreateSessionInput } from '@/types';
@@ -129,26 +130,56 @@ export async function canCheckIn(
 }
 
 export async function createCheckin(userId: string): Promise<{ sessionId: string }> {
-  const { allowed } = await canCheckIn(userId);
-  if (!allowed) {
-    throw new Error('Check-in limit reached for today');
-  }
+  // Use transaction to atomically check limit and create check-in
+  const sessionId = await runTransaction(db, async (transaction) => {
+    // Query current sessions to check limit
+    const { start, end } = getTodayRange();
+    const q = query(
+      sessionsRef(userId),
+      where('completed', '==', true),
+      where('createdAt', '>=', Timestamp.fromDate(start)),
+      where('createdAt', '<=', Timestamp.fromDate(end)),
+    );
+    const snapshot = await getDocs(q);
+    const sessions = snapshot.docs.map((d) => toSession(d.id, d.data()));
 
-  const sessionDoc = doc(sessionsRef(userId));
-  const now = new Date();
+    // Calculate current usage and limit
+    const focusSeconds = sessions
+      .filter((s) => s.type === 'focus')
+      .reduce((sum, s) => sum + s.duration, 0);
+    const used = sessions.filter((s) => s.type === 'checkin').length;
 
-  await setDoc(sessionDoc, {
-    startTime: Timestamp.fromDate(now),
-    duration: 0,
-    type: 'checkin',
-    completed: true,
-    interrupted: false,
-    dismissed: false,
-    completedAt: Timestamp.fromDate(now),
-    createdAt: serverTimestamp(),
+    // Get bonus interval from settings
+    const settings = await getUserSettings(userId);
+    const bonusInterval = settings.checkinBonusInterval;
+    const bonusIntervalSeconds = bonusInterval * 60;
+    const bonuses = Math.floor(focusSeconds / bonusIntervalSeconds);
+    const limit = CHECKIN_BASE_LIMIT + bonuses;
+
+    // Check if under limit
+    if (used >= limit) {
+      throw new Error('Check-in limit reached for today');
+    }
+
+    // Create check-in document atomically
+    const sessionDoc = doc(sessionsRef(userId));
+    const now = new Date();
+
+    transaction.set(sessionDoc, {
+      startTime: Timestamp.fromDate(now),
+      duration: 0,
+      type: 'checkin',
+      completed: true,
+      interrupted: false,
+      dismissed: false,
+      completedAt: Timestamp.fromDate(now),
+      createdAt: serverTimestamp(),
+    });
+
+    return sessionDoc.id;
   });
 
-  return { sessionId: sessionDoc.id };
+  return { sessionId };
 }
 
 export async function addManualTime(
@@ -156,6 +187,11 @@ export async function addManualTime(
   type: 'focus' | 'break',
   durationSeconds: number,
 ): Promise<void> {
+  // Validate duration is positive
+  if (durationSeconds <= 0) {
+    throw new Error('Duration must be greater than zero');
+  }
+
   const sessionDoc = doc(sessionsRef(userId));
   const now = new Date();
 

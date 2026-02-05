@@ -4,13 +4,12 @@ import { useSession } from '@/hooks/useSession';
 import { useRecentDurations } from '@/hooks/useRecentDurations';
 import { useSettings } from '@/hooks/useSettings';
 import { FOCUS_PRESETS, BREAK_PRESETS } from '@/utils/constants';
-import { CHECKIN_INTERVAL_OPTIONS } from '@/types/settings';
+import { CHECKIN_INTERVAL_OPTIONS, type CheckinBonusInterval } from '@/types/settings';
 import { DurationPicker } from './DurationPicker';
 import { QuickSelectButtons } from './QuickSelectButtons';
 import { TimerDisplay } from './TimerDisplay';
 import { ExceededTimerDisplay } from './ExceededTimerDisplay';
 import { TimerControls } from './TimerControls';
-import { SessionCompleteCard } from './SessionCompleteCard';
 import { TreeAnimation } from '@/components/tree/TreeAnimation';
 import type { TimerMode } from '@/types';
 
@@ -23,6 +22,7 @@ export function UnifiedTimerPage() {
   const [activeMode, setActiveMode] = useState<TimerMode>('focus');
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [checkedIncomplete, setCheckedIncomplete] = useState(false);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [checkinStatus, setCheckinStatus] = useState<{
     used: number;
     limit: number;
@@ -93,13 +93,21 @@ export function UnifiedTimerPage() {
     let cancelled = false;
 
     const loadStatus = async () => {
-      const status = await session.getCheckInStatus();
-      if (!cancelled && status) {
-        setCheckinStatus({
-          used: status.used,
-          limit: status.limit,
-          minutesToNextBonus: status.minutesToNextBonus,
-        });
+      try {
+        const status = await session.getCheckInStatus();
+        if (!cancelled && status) {
+          setCheckinStatus({
+            used: status.used,
+            limit: status.limit,
+            minutesToNextBonus: status.minutesToNextBonus,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load check-in status:', error);
+        // Reset to null on error to show a clean state
+        if (!cancelled) {
+          setCheckinStatus(null);
+        }
       }
     };
 
@@ -156,6 +164,9 @@ export function UnifiedTimerPage() {
   };
 
   const handleCheckIn = async () => {
+    if (isCheckingIn) return; // Prevent double-clicks
+
+    setIsCheckingIn(true);
     try {
       await session.checkIn();
       const status = await session.getCheckInStatus();
@@ -168,21 +179,30 @@ export function UnifiedTimerPage() {
       }
     } catch (error) {
       console.error('Check-in failed:', error);
+      // TODO: Show user-friendly error message
+    } finally {
+      setIsCheckingIn(false);
     }
   };
 
   const handleIntervalChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newInterval = parseInt(event.target.value, 10);
-    await updateSettings({ checkinBonusInterval: newInterval });
+    const newInterval = parseInt(event.target.value, 10) as CheckinBonusInterval;
 
-    // Refresh check-in status to show updated calculations
-    const status = await session.getCheckInStatus();
-    if (status) {
-      setCheckinStatus({
-        used: status.used,
-        limit: status.limit,
-        minutesToNextBonus: status.minutesToNextBonus,
-      });
+    try {
+      await updateSettings({ checkinBonusInterval: newInterval });
+
+      // Refresh check-in status to show updated calculations
+      const status = await session.getCheckInStatus();
+      if (status) {
+        setCheckinStatus({
+          used: status.used,
+          limit: status.limit,
+          minutesToNextBonus: status.minutesToNextBonus,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update interval setting:', error);
+      // TODO: Show user-friendly error message and revert dropdown
     }
   };
 
@@ -194,7 +214,6 @@ export function UnifiedTimerPage() {
 
   const isIdle = timer.state.status === 'idle';
   const isRunning = timer.state.status === 'running';
-  const isCompleted = timer.state.status === 'completed';
   const isExceeded = timer.state.status === 'exceeded';
   const isFocus = activeMode === 'focus';
   const presets = isFocus ? FOCUS_PRESETS : BREAK_PRESETS;
@@ -303,15 +322,6 @@ export function UnifiedTimerPage() {
         />
       )}
 
-      {/* Completion card */}
-      {isCompleted && selectedDuration && (
-        <SessionCompleteCard
-          duration={selectedDuration}
-          mode={activeMode}
-          onNewSession={handleNewSession}
-        />
-      )}
-
       {/* Duration selection - visible when idle and NOT check-in mode */}
       {isIdle && activeMode !== 'checkin' && (
         <>
@@ -338,16 +348,18 @@ export function UnifiedTimerPage() {
       )}
 
       {/* Controls */}
-      {!isCompleted && !isExceeded && (
+      {!isExceeded && (
         activeMode === 'checkin' ? (
           <button
             onClick={handleCheckIn}
-            disabled={!!(checkinStatus && checkinStatus.used >= checkinStatus.limit)}
+            disabled={isCheckingIn || !!(checkinStatus && checkinStatus.used >= checkinStatus.limit)}
             className="w-full min-h-[48px] rounded-xl px-6 py-3 text-lg font-semibold text-white disabled:opacity-40 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed"
           >
-            {checkinStatus && checkinStatus.used >= checkinStatus.limit
-              ? 'Daily Limit Reached'
-              : 'Check In'}
+            {isCheckingIn
+              ? 'Checking In...'
+              : checkinStatus && checkinStatus.used >= checkinStatus.limit
+                ? 'Daily Limit Reached'
+                : 'Check In'}
           </button>
         ) : (
           <TimerControls
