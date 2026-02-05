@@ -8,7 +8,6 @@ import { DurationInput } from './DurationInput';
 import { QuickSelectButtons } from './QuickSelectButtons';
 import { TimerDisplay } from './TimerDisplay';
 import { TimerControls } from './TimerControls';
-import { SessionCompleteCard } from './SessionCompleteCard';
 import { TreeAnimation } from '@/components/tree/TreeAnimation';
 
 export function TimerPage() {
@@ -66,14 +65,8 @@ export function TimerPage() {
     setSelectedDuration(null);
   };
 
-  const handleNewSession = () => {
-    timer.reset();
-    setSelectedDuration(null);
-  };
-
   const isIdle = timer.state.status === 'idle';
   const isRunning = timer.state.status === 'running';
-  const isCompleted = timer.state.status === 'completed';
 
   return (
     <div className="flex flex-col gap-5">
@@ -86,15 +79,6 @@ export function TimerPage() {
 
       {/* Timer Display - visible when running */}
       {isRunning && <TimerDisplay remainingSeconds={timer.state.remainingSeconds} mode="focus" />}
-
-      {/* Completion card */}
-      {isCompleted && selectedDuration && (
-        <SessionCompleteCard
-          duration={selectedDuration}
-          mode="focus"
-          onNewSession={handleNewSession}
-        />
-      )}
 
       {/* Duration selection - visible when idle */}
       {isIdle && (
@@ -117,15 +101,13 @@ export function TimerPage() {
       )}
 
       {/* Controls */}
-      {!isCompleted && (
-        <TimerControls
-          status={timer.state.status}
-          onStart={handleStart}
-          onStop={handleStop}
-          canStart={isIdle && selectedDuration !== null}
-          mode="focus"
-        />
-      )}
+      <TimerControls
+        status={timer.state.status}
+        onStart={handleStart}
+        onStop={handleStop}
+        canStart={isIdle && selectedDuration !== null}
+        mode="focus"
+      />
 
       {/* Break Timer Button - always visible */}
       <div className="border-t border-gray-200 pt-4 mt-2">

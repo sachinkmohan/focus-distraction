@@ -20,7 +20,11 @@ interface TreeAnimationProps {
 
 function getAnimationState(elapsed: number, total: number, status: TimerStatus) {
   if (status === 'idle') return { phase: 'seed' as const, progress: 0 };
-  if (status === 'completed') return { phase: 'complete' as const, progress: 1 };
+
+  // When timer exceeds or completes, show fully grown tree
+  if (status === 'exceeded' && elapsed >= total) {
+    return { phase: 'complete' as const, progress: 1 };
+  }
 
   if (elapsed <= SEED_TO_PLANT_DURATION) {
     return { phase: 'sprouting' as const, progress: Math.min(1, elapsed / SEED_TO_PLANT_DURATION) };

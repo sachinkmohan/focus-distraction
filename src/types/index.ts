@@ -1,3 +1,4 @@
 export * from './user';
 export * from './session';
 export * from './timer';
+export * from './settings';

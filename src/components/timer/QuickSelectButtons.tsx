@@ -1,11 +1,12 @@
 import { formatDurationLabel } from '@/utils/duration';
+import type { TimerMode } from '@/types';
 
 interface QuickSelectButtonsProps {
   presets: number[];
   recentDurations: number[];
   onSelect: (seconds: number) => void;
   disabled: boolean;
-  variant: 'focus' | 'break';
+  variant: TimerMode;
 }
 
 export function QuickSelectButtons({

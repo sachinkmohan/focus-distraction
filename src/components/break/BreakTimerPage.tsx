@@ -7,7 +7,6 @@ import { DurationInput } from '@/components/timer/DurationInput';
 import { QuickSelectButtons } from '@/components/timer/QuickSelectButtons';
 import { TimerDisplay } from '@/components/timer/TimerDisplay';
 import { TimerControls } from '@/components/timer/TimerControls';
-import { SessionCompleteCard } from '@/components/timer/SessionCompleteCard';
 
 export function BreakTimerPage() {
   const timer = useTimer();
@@ -40,14 +39,8 @@ export function BreakTimerPage() {
     setSelectedDuration(null);
   };
 
-  const handleNewSession = () => {
-    timer.reset();
-    setSelectedDuration(null);
-  };
-
   const isIdle = timer.state.status === 'idle';
   const isRunning = timer.state.status === 'running';
-  const isCompleted = timer.state.status === 'completed';
 
   return (
     <div className="flex flex-col gap-5">
@@ -63,14 +56,6 @@ export function BreakTimerPage() {
       )}
 
       {isRunning && <TimerDisplay remainingSeconds={timer.state.remainingSeconds} mode="break" />}
-
-      {isCompleted && selectedDuration && (
-        <SessionCompleteCard
-          duration={selectedDuration}
-          mode="break"
-          onNewSession={handleNewSession}
-        />
-      )}
 
       {isIdle && (
         <>
@@ -91,15 +76,13 @@ export function BreakTimerPage() {
         </>
       )}
 
-      {!isCompleted && (
-        <TimerControls
-          status={timer.state.status}
-          onStart={handleStart}
-          onStop={handleStop}
-          canStart={isIdle && selectedDuration !== null}
-          mode="break"
-        />
-      )}
+      <TimerControls
+        status={timer.state.status}
+        onStart={handleStart}
+        onStop={handleStop}
+        canStart={isIdle && selectedDuration !== null}
+        mode="break"
+      />
     </div>
   );
 }

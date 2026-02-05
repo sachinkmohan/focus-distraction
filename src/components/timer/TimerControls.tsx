@@ -1,11 +1,11 @@
-import type { TimerStatus } from '@/types';
+import type { TimerStatus, TimerMode } from '@/types';
 
 interface TimerControlsProps {
   status: TimerStatus;
   onStart: () => void;
   onStop: () => void;
   canStart: boolean;
-  mode: 'focus' | 'break';
+  mode: TimerMode;
 }
 
 export function TimerControls({ status, onStart, onStop, canStart, mode }: TimerControlsProps) {

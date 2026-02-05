@@ -35,24 +35,17 @@ export function useTimer() {
         const now = new Date();
         setTimeout(() => onCompleteRef.current?.(), 0);
 
-        // For break mode, continue ticking to show exceeded time
-        if (prev.mode === 'break') {
-          return {
-            ...prev,
-            remainingSeconds: 0,
-            status: 'exceeded',
-            completedAt: now,
-            exceededSeconds: 0,
-          };
-        }
-
-        // For focus mode, just complete
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        intervalRef.current = null;
-        return { ...prev, remainingSeconds: 0, status: 'completed', completedAt: now };
+        // For both focus and break modes, continue ticking to show completion time
+        return {
+          ...prev,
+          remainingSeconds: 0,
+          status: 'exceeded',
+          completedAt: now,
+          exceededSeconds: 0,
+        };
       }
 
-      // If in exceeded state (break timer past deadline)
+      // If in exceeded state (timer completed, showing elapsed time since completion)
       if (prev.status === 'exceeded' && prev.completedAt) {
         const exceeded = Math.floor((Date.now() - prev.completedAt.getTime()) / 1000);
         return { ...prev, exceededSeconds: exceeded };

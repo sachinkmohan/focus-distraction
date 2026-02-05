@@ -1,8 +1,9 @@
 import { formatCountdown } from '@/utils/duration';
+import type { TimerMode } from '@/types';
 
 interface TimerDisplayProps {
   remainingSeconds: number;
-  mode: 'focus' | 'break';
+  mode: TimerMode;
 }
 
 export function TimerDisplay({ remainingSeconds, mode }: TimerDisplayProps) {
