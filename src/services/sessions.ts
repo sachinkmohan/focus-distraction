@@ -117,6 +117,14 @@ export async function canCheckIn(
     bonusInterval = settings.checkinBonusInterval;
   }
 
+  // Validate bonusInterval to prevent division by zero or invalid calculations
+  if (!Number.isFinite(bonusInterval) || bonusInterval <= 0) {
+    console.warn(
+      `Invalid bonus interval detected for user ${userId}: ${bonusInterval}. Falling back to 30 minutes.`
+    );
+    bonusInterval = 30; // Safe fallback
+  }
+
   const bonusIntervalSeconds = bonusInterval * 60;
   const bonuses = Math.floor(focusSeconds / bonusIntervalSeconds);
   const limit = CHECKIN_BASE_LIMIT + bonuses;
