@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { DEFAULT_SETTINGS } from '@/types/settings';
+import { DEFAULT_SETTINGS, CHECKIN_INTERVAL_OPTIONS } from '@/types/settings';
 import type { UserSettings } from '@/types/settings';
 
 function settingsRef(userId: string) {
@@ -17,8 +17,23 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
   }
 
   const data = snap.data();
+  // Migrate stale intervals (e.g. 5, 10, 15) that are no longer valid options
+  const storedInterval = data.checkinBonusInterval ?? DEFAULT_SETTINGS.checkinBonusInterval;
+  const validInterval = (CHECKIN_INTERVAL_OPTIONS as readonly number[]).includes(storedInterval)
+    ? storedInterval
+    : DEFAULT_SETTINGS.checkinBonusInterval;
+
+  // Persist corrected value if migration occurred
+  const needsMigration = storedInterval !== validInterval;
+  if (needsMigration) {
+    await updateDoc(settingsRef(userId), {
+      checkinBonusInterval: validInterval,
+    });
+  }
+
   return {
-    checkinBonusInterval: data.checkinBonusInterval ?? DEFAULT_SETTINGS.checkinBonusInterval,
+    checkinBonusInterval: validInterval as UserSettings['checkinBonusInterval'],
+    settingsLocked: data.settingsLocked ?? DEFAULT_SETTINGS.settingsLocked,
   };
 }
 
