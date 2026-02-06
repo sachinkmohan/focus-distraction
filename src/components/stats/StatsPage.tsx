@@ -2,6 +2,7 @@ import { useStats } from '@/hooks/useStats';
 import { useSession } from '@/hooks/useSession';
 import { StatCard } from './StatCard';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 export function StatsPage() {
   const { today, yesterday, thisWeek, last4Weeks, loading, refresh } = useStats();
@@ -9,13 +10,25 @@ export function StatsPage() {
   const navigate = useNavigate();
 
   const handleAddFocusTime = async () => {
-    await session.addManualTime('focus', 300); // 5 minutes
-    refresh();
+    try {
+      await session.addManualTime('focus', 300); // 5 minutes
+      await refresh();
+      toast.success('+5m focus added', { autoClose: 1000, position: 'bottom-center' });
+    } catch (error) {
+      console.error('Failed to add focus time:', error);
+      toast.error('Failed to add focus time', { autoClose: 2000, position: 'bottom-center' });
+    }
   };
 
   const handleAddBreakTime = async () => {
-    await session.addManualTime('break', 300); // 5 minutes
-    refresh();
+    try {
+      await session.addManualTime('break', 300); // 5 minutes
+      await refresh();
+      toast.info('+5m break added', { autoClose: 1000, position: 'bottom-center' });
+    } catch (error) {
+      console.error('Failed to add break time:', error);
+      toast.error('Failed to add break time', { autoClose: 2000, position: 'bottom-center' });
+    }
   };
 
   if (loading) {

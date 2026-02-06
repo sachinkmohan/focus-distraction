@@ -13,6 +13,7 @@ import {
   Timestamp,
   runTransaction,
 } from 'firebase/firestore';
+import { subHours } from 'date-fns';
 import { db } from '@/config/firebase';
 import type { Session, CreateSessionInput } from '@/types';
 import { CHECKIN_BASE_LIMIT } from '@/utils/constants';
@@ -240,7 +241,7 @@ export async function addManualTime(
     type,
     completed: true,
     interrupted: false,
-    dismissed: false,
+    dismissed: true,
     completedAt: Timestamp.fromDate(now),
     createdAt: serverTimestamp(),
   });
@@ -277,17 +278,17 @@ export async function checkIncompleteSession(userId: string): Promise<
   return { status: 'resume', remaining, session };
 }
 
-export async function checkRecentBreakSession(userId: string): Promise<
+export async function checkRecentExceededSession(userId: string): Promise<
   | { status: 'none' }
   | { status: 'exceeded'; session: Session; exceededSeconds: number }
 > {
-  // Check for break sessions completed in the last 2 hours (not interrupted)
-  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  // Check for focus/break sessions completed in the last 2 hours (not interrupted)
+  const twoHoursAgo = subHours(new Date(), 2);
 
   const q = query(
     sessionsRef(userId),
     where('completed', '==', true),
-    where('type', '==', 'break'),
+    where('type', 'in', ['focus', 'break']),
     where('interrupted', '==', false),
     where('dismissed', '==', false),
     where('completedAt', '>=', Timestamp.fromDate(twoHoursAgo)),
@@ -304,7 +305,7 @@ export async function checkRecentBreakSession(userId: string): Promise<
 
   if (!session.completedAt) return { status: 'none' };
 
-  // Calculate how long ago the break ended (prevent negative values from clock skew)
+  // Calculate how long ago the session ended (prevent negative values from clock skew)
   const exceededSeconds = Math.max(
     0,
     Math.floor((Date.now() - session.completedAt.getTime()) / 1000),
