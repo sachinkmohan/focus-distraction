@@ -10,15 +10,25 @@ export function StatsPage() {
   const navigate = useNavigate();
 
   const handleAddFocusTime = async () => {
-    await session.addManualTime('focus', 300); // 5 minutes
-    refresh();
-    toast.success('+5m focus added', { autoClose: 1000, position: 'bottom-center' });
+    try {
+      await session.addManualTime('focus', 300); // 5 minutes
+      await refresh();
+      toast.success('+5m focus added', { autoClose: 1000, position: 'bottom-center' });
+    } catch (error) {
+      console.error('Failed to add focus time:', error);
+      toast.error('Failed to add focus time', { autoClose: 2000, position: 'bottom-center' });
+    }
   };
 
   const handleAddBreakTime = async () => {
-    await session.addManualTime('break', 300); // 5 minutes
-    refresh();
-    toast.info('+5m break added', { autoClose: 1000, position: 'bottom-center' });
+    try {
+      await session.addManualTime('break', 300); // 5 minutes
+      await refresh();
+      toast.info('+5m break added', { autoClose: 1000, position: 'bottom-center' });
+    } catch (error) {
+      console.error('Failed to add break time:', error);
+      toast.error('Failed to add break time', { autoClose: 2000, position: 'bottom-center' });
+    }
   };
 
   if (loading) {
