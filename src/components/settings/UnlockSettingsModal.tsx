@@ -44,7 +44,7 @@ export function UnlockSettingsModal({ isOpen, onClose, onUnlock }: UnlockSetting
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
+      onClick={() => { if (!isUnlocking) onClose(); }}
     >
       <div
         role="dialog"
