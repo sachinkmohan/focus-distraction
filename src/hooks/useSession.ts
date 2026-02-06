@@ -6,7 +6,7 @@ import {
   cancelSession,
   savePartialSession,
   checkIncompleteSession,
-  checkRecentBreakSession,
+  checkRecentExceededSession,
   dismissSession,
   canCheckIn,
   createCheckin,
@@ -59,9 +59,9 @@ export function useSession() {
     return checkIncompleteSession(user.uid);
   }, [user]);
 
-  const checkRecentBreak = useCallback(async () => {
+  const checkRecentExceeded = useCallback(async () => {
     if (!user) return { status: 'none' as const };
-    return checkRecentBreakSession(user.uid);
+    return checkRecentExceededSession(user.uid);
   }, [user]);
 
   const dismissExceededSession = useCallback(
@@ -95,7 +95,7 @@ export function useSession() {
     endSession,
     stopSession,
     checkIncomplete,
-    checkRecentBreak,
+    checkRecentExceeded,
     dismissExceededSession,
     checkIn,
     getCheckInStatus,

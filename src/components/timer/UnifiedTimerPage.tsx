@@ -63,22 +63,23 @@ export function UnifiedTimerPage() {
         return;
       }
 
-      // If no incomplete, check for recent break sessions that exceeded
-      const breakResult = await session.checkRecentBreak();
-      if (breakResult.status === 'exceeded') {
-        setActiveMode('break');
-        setSelectedDuration(breakResult.session.duration);
+      // If no incomplete, check for recent focus/break sessions that exceeded
+      const exceededResult = await session.checkRecentExceeded();
+      if (exceededResult.status === 'exceeded') {
+        const sessionType = exceededResult.session.type;
+        setActiveMode(sessionType);
+        setSelectedDuration(exceededResult.session.duration);
 
         // Set timer to exceeded state
         timer.setState({
           status: 'exceeded',
-          mode: 'break',
-          totalDuration: breakResult.session.duration,
+          mode: sessionType,
+          totalDuration: exceededResult.session.duration,
           remainingSeconds: 0,
-          sessionId: breakResult.session.id,
-          startTime: breakResult.session.startTime,
-          completedAt: breakResult.session.completedAt,
-          exceededSeconds: breakResult.exceededSeconds,
+          sessionId: exceededResult.session.id,
+          startTime: exceededResult.session.startTime,
+          completedAt: exceededResult.session.completedAt,
+          exceededSeconds: exceededResult.exceededSeconds,
         });
       }
 

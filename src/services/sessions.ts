@@ -277,17 +277,17 @@ export async function checkIncompleteSession(userId: string): Promise<
   return { status: 'resume', remaining, session };
 }
 
-export async function checkRecentBreakSession(userId: string): Promise<
+export async function checkRecentExceededSession(userId: string): Promise<
   | { status: 'none' }
   | { status: 'exceeded'; session: Session; exceededSeconds: number }
 > {
-  // Check for break sessions completed in the last 2 hours (not interrupted)
+  // Check for focus/break sessions completed in the last 2 hours (not interrupted)
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
   const q = query(
     sessionsRef(userId),
     where('completed', '==', true),
-    where('type', '==', 'break'),
+    where('type', 'in', ['focus', 'break']),
     where('interrupted', '==', false),
     where('dismissed', '==', false),
     where('completedAt', '>=', Timestamp.fromDate(twoHoursAgo)),
