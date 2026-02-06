@@ -23,6 +23,14 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
     ? storedInterval
     : DEFAULT_SETTINGS.checkinBonusInterval;
 
+  // Persist corrected value if migration occurred
+  const needsMigration = storedInterval !== validInterval;
+  if (needsMigration) {
+    await updateDoc(settingsRef(userId), {
+      checkinBonusInterval: validInterval,
+    });
+  }
+
   return {
     checkinBonusInterval: validInterval as UserSettings['checkinBonusInterval'],
     settingsLocked: data.settingsLocked ?? DEFAULT_SETTINGS.settingsLocked,

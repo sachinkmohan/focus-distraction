@@ -213,6 +213,7 @@ export function UnifiedTimerPage() {
       await updateSettings({ settingsLocked: false });
     } catch (error) {
       console.error('Failed to unlock settings:', error);
+      throw error; // Re-throw so modal can display error
     }
   };
 
