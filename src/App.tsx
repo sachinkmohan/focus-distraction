@@ -5,6 +5,8 @@ import { LoginPage } from '@/components/auth/LoginPage';
 import { UnifiedTimerPage } from '@/components/timer/UnifiedTimerPage';
 import { StatsPage } from '@/components/stats/StatsPage';
 import { AppShell } from '@/components/layout/AppShell';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function App() {
   return (
@@ -25,6 +27,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <ToastContainer position="top-center" autoClose={1000} hideProgressBar newestOnTop closeOnClick />
       </AuthProvider>
     </BrowserRouter>
   );

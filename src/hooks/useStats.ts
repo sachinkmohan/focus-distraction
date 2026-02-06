@@ -28,7 +28,7 @@ export function useStats() {
 
   const refresh = useCallback(async () => {
     if (!user) return;
-    setStats((prev) => ({ ...prev, loading: true }));
+    setStats((prev) => ({ ...prev, loading: prev.today === null }));
 
     try {
       const [today, yesterday, thisWeek, last4Weeks] = await Promise.all([

@@ -240,7 +240,7 @@ export async function addManualTime(
     type,
     completed: true,
     interrupted: false,
-    dismissed: false,
+    dismissed: true,
     completedAt: Timestamp.fromDate(now),
     createdAt: serverTimestamp(),
   });
