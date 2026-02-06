@@ -11,6 +11,7 @@ import { TimerDisplay } from './TimerDisplay';
 import { ExceededTimerDisplay } from './ExceededTimerDisplay';
 import { TimerControls } from './TimerControls';
 import { TreeAnimation } from '@/components/tree/TreeAnimation';
+import { UnlockSettingsModal } from '@/components/settings/UnlockSettingsModal';
 import type { TimerMode } from '@/types';
 
 export function UnifiedTimerPage() {
@@ -23,6 +24,7 @@ export function UnifiedTimerPage() {
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [checkedIncomplete, setCheckedIncomplete] = useState(false);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [checkinStatus, setCheckinStatus] = useState<{
     used: number;
     limit: number;
@@ -206,6 +208,22 @@ export function UnifiedTimerPage() {
     }
   };
 
+  const handleUnlockSettings = async () => {
+    try {
+      await updateSettings({ settingsLocked: false });
+    } catch (error) {
+      console.error('Failed to unlock settings:', error);
+    }
+  };
+
+  const handleLockSettings = async () => {
+    try {
+      await updateSettings({ settingsLocked: true });
+    } catch (error) {
+      console.error('Failed to lock settings:', error);
+    }
+  };
+
   const handleModeSwitch = (mode: TimerMode) => {
     if (timer.state.status === 'running') return; // Can't switch during active timer
     setActiveMode(mode);
@@ -285,23 +303,50 @@ export function UnifiedTimerPage() {
                 {checkinStatus.minutesToNextBonus} more min to earn next bonus
               </p>
 
-              {/* Bonus Interval Dropdown */}
+              {/* Bonus Interval Dropdown with Lock */}
               <div className="mt-4 w-full max-w-xs">
                 <label htmlFor="bonus-interval" className="block text-xs text-gray-600 mb-1">
                   Earn bonus check-in every:
                 </label>
-                <select
-                  id="bonus-interval"
-                  value={settings.checkinBonusInterval}
-                  onChange={handleIntervalChange}
-                  className="w-full min-h-[44px] px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  {CHECKIN_INTERVAL_OPTIONS.map((minutes) => (
-                    <option key={minutes} value={minutes}>
-                      {minutes} minutes
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    id="bonus-interval"
+                    value={settings.checkinBonusInterval}
+                    onChange={handleIntervalChange}
+                    disabled={settings.settingsLocked}
+                    className={`w-full min-h-[44px] px-3 py-2 pr-12 border border-gray-300 rounded-lg text-sm font-medium ${
+                      settings.settingsLocked
+                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
+                        : 'bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
+                    }`}
+                  >
+                    {CHECKIN_INTERVAL_OPTIONS.map((minutes) => (
+                      <option key={minutes} value={minutes}>
+                        {minutes} minutes
+                      </option>
+                    ))}
+                  </select>
+                  {/* Lock/Unlock toggle button */}
+                  <button
+                    onClick={settings.settingsLocked ? () => setShowUnlockModal(true) : handleLockSettings}
+                    className={`absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center ${
+                      settings.settingsLocked
+                        ? 'text-gray-400 hover:text-gray-600'
+                        : 'text-indigo-400 hover:text-indigo-600'
+                    }`}
+                    aria-label={settings.settingsLocked ? 'Unlock settings' : 'Lock settings'}
+                  >
+                    {settings.settingsLocked ? (
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -371,6 +416,11 @@ export function UnifiedTimerPage() {
           />
         )
       )}
+      <UnlockSettingsModal
+        isOpen={showUnlockModal}
+        onClose={() => setShowUnlockModal(false)}
+        onUnlock={handleUnlockSettings}
+      />
     </div>
   );
 }
