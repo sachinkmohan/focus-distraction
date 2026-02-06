@@ -1,5 +1,176 @@
 # Changelog
 
+## 2026-02-06 - Update 8: Settings Lock & CodeRabbit Fixes
+
+### Features Added
+
+**Settings Lock/Unlock Modal**
+- Added passphrase-protected lock for check-in bonus interval setting
+- Lock/unlock toggle button next to the interval dropdown
+- Passphrase: "I give up on discipline"
+- Modal with confirmation message and unlock flow
+- Prevents impulsive changes to check-in settings
+- Settings remain locked until user consciously unlocks
+
+**Async Error Handling & Loading States**
+- Modal shows loading state ("Unlocking...") during Firestore write
+- Error handling with retry capability if unlock fails
+- Only closes modal after successful Firestore update
+- Prevents race condition where modal closes before settings save
+
+**Accessibility Improvements**
+- Added ARIA attributes: `role="dialog"`, `aria-modal`, `aria-labelledby`, `aria-describedby`
+- Enter key support in passphrase input field
+- Disabled state for all modal controls during unlock operation
+- Screen reader friendly with proper semantic HTML
+
+### Bug Fixes
+
+**Fixed Check-in Race Condition**
+- Implemented distributed locking for check-in operations
+- Prevents double check-ins from rapid clicks or concurrent requests
+- Lock expires after 5 seconds (stale lock protection)
+- Uses Firestore transactions for atomic lock acquisition
+- Lock document: `users/{userId}/locks/checkin-{date}`
+
+**Fixed Settings Migration Logic**
+- Settings migration now persists corrected values back to Firestore
+- Previously, invalid intervals were normalized in-memory but never saved
+- Eliminated perpetual re-migration on every settings read
+- One-time auto-fix for users with stale interval values
+
+### How It Works
+
+**Settings Lock Flow:**
+1. Check-in interval dropdown is locked by default (gray lock icon)
+2. Click lock icon → UnlockSettingsModal appears
+3. Type passphrase: "I give up on discipline"
+4. Click "Unlock" or press Enter
+5. Modal shows "Unlocking..." while saving to Firestore
+6. On success → modal closes, dropdown becomes editable (open lock icon)
+7. On error → error message shown, modal stays open for retry
+8. Click open lock icon → settings locked again
+
+**Race Condition Prevention:**
+1. User clicks "Check In" button
+2. Firestore transaction checks for lock document
+3. If lock exists and fresh (<5s) → reject with error message
+4. If no lock or stale → acquire lock, create check-in, release lock
+5. Concurrent requests see the lock and back off
+
+### Technical
+
+**UnlockSettingsModal Component:**
+- Created new modal component with passphrase validation
+- Async/await handling for Firestore updates
+- Loading state management with button feedback
+- Error state display and recovery
+- Keyboard accessibility (Enter key submit)
+- ARIA attributes for screen readers
+
+**Distributed Locking:**
+- Lock document format: `users/{userId}/locks/checkin-{YYYY-MM-DD}`
+- Lock contains: `{ timestamp: number, userId: string }`
+- Stale lock threshold: 5000ms
+- Transaction-based lock acquisition
+- Best-effort lock cleanup after operation
+
+**Settings Migration:**
+- `getUserSettings()` now checks if migration occurred
+- If stored interval ≠ normalized interval → writes back corrected value
+- Uses `updateDoc()` to persist the fix
+- Idempotent: safe to run multiple times
+
+### Files Created
+- `src/components/settings/UnlockSettingsModal.tsx` - Passphrase modal component
+
+### Files Modified
+- `src/components/timer/UnifiedTimerPage.tsx` - Added lock/unlock button, modal integration
+- `src/services/settings.ts` - Added persistent migration write-back logic
+- `src/types/settings.ts` - Added unlock passphrase constant, expanded interval options
+- `src/services/sessions.ts` - Implemented distributed locking for check-ins
+
+---
+
+## 2026-02-06 - Update 7: Cross-Device Sync & UX Improvements
+
+### Features Added
+
+**Cross-Device Exceeded State Sync**
+- Focus timer exceeded state now syncs across devices (previously only break timers)
+- When a focus session completes on device A, device B will show the completion screen
+- Works for both focus and break sessions completed within the last 2 hours
+- Dismissed sessions won't reappear on other devices
+
+**Manual Time Toast Notifications**
+- Added 1-second toast notifications when clicking +5m buttons
+- Green "success" toast for focus time
+- Blue "info" toast for break time
+- Toast positioned at bottom-center for mobile-friendly placement
+
+### Improvements
+
+**Fixed Manual Time Exceeded Banners**
+- Manual +5m time entries no longer trigger exceeded timer banners
+- Previously, adding manual time would show completion screens on timer page
+- Manual entries are now pre-dismissed (`dismissed: true`)
+
+**Eliminated Stats Page Flash**
+- Removed loading spinner flash when clicking +5m buttons
+- Stats cards now update smoothly in-place
+- Only shows loading spinner on initial page load
+- Much better UX during manual time increments
+
+### How It Works
+
+**Cross-Device Focus Completion:**
+1. Start 5-minute focus session on desktop at 3:00 PM
+2. Timer completes at 3:05 PM
+3. Open app on phone at 3:08 PM
+4. Phone shows: "Session complete" + "Great work! Time to take a break."
+5. Dismiss on phone → won't reappear on desktop
+
+**Manual Time Entry:**
+1. Click +5m focus button on stats page
+2. See green toast: "+5m focus added" (1 second)
+3. Stats update smoothly without page flash
+4. No exceeded banner appears on timer page
+
+### Technical
+
+**Cross-Device Sync:**
+- Renamed `checkRecentBreakSession()` → `checkRecentExceededSession()`
+- Changed Firestore query from `type == 'break'` → `type in ['focus', 'break']`
+- Updated `UnifiedTimerPage.tsx` to set mode dynamically from session type
+- No new Firestore indexes needed (reuses existing composite index)
+
+**Manual Time Fix:**
+- `addManualTime()` now sets `dismissed: true` (was `false`)
+- Prevents manual entries from appearing in exceeded session query
+
+**Stats Page UX:**
+- Changed `useStats.refresh()` loading logic from `loading: true` to `loading: prev.today === null`
+- Only shows spinner when no data exists yet
+- Background refreshes keep UI stable
+
+**Toast Implementation:**
+- Installed `react-toastify` package
+- Added `ToastContainer` to `App.tsx` root
+- Configured with `autoClose: 1000, position: 'bottom-center'`
+
+### Files Modified
+- `src/services/sessions.ts` - Renamed function, changed query filter, fixed manual time dismissed flag
+- `src/hooks/useSession.ts` - Updated function name
+- `src/components/timer/UnifiedTimerPage.tsx` - Dynamic mode handling for exceeded sessions
+- `src/hooks/useStats.ts` - Conditional loading state logic
+- `src/components/stats/StatsPage.tsx` - Added toast notifications
+- `src/App.tsx` - Added ToastContainer
+
+### Dependencies Added
+- `react-toastify` - Toast notification library
+
+---
+
 ## 2026-02-05 - Update 6: Configurable Check-in Bonus Interval
 
 ### Features Added
