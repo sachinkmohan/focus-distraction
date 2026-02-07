@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { differenceInSeconds } from 'date-fns';
 import { useTimer } from '@/hooks/useTimer';
 import { useSession } from '@/hooks/useSession';
 import { useRecentDurations } from '@/hooks/useRecentDurations';
@@ -69,48 +70,66 @@ export function UnifiedTimerPage() {
       if (incompleteResult.status === 'completed') {
         const { session: s } = incompleteResult;
         const sessionType = s.type;
-        setActiveMode(sessionType);
-        setSelectedDuration(s.duration);
 
-        const now = new Date();
-        const exceededSeconds = Math.max(
-          0,
-          Math.floor((now.getTime() - s.completedAt!.getTime()) / 1000),
-        );
+        // Ensure completedAt is a Date object (handling Firestore Timestamp if necessary)
+        const completedDate = s.completedAt
+          ? typeof (s.completedAt as any).toDate === 'function'
+            ? (s.completedAt as any).toDate()
+            : new Date(s.completedAt)
+          : null;
 
-        // Set timer to exceeded state
-        timer.setState({
-          status: 'exceeded',
-          mode: sessionType,
-          totalDuration: s.duration,
-          remainingSeconds: 0,
-          sessionId: s.id,
-          startTime: s.startTime,
-          completedAt: s.completedAt,
-          exceededSeconds,
-        });
-        setCheckedIncomplete(true);
-        return;
+        if (completedDate) {
+          setActiveMode(sessionType);
+          setSelectedDuration(s.duration);
+
+          const exceededSeconds = Math.max(0, differenceInSeconds(new Date(), completedDate));
+
+          // Set timer to exceeded state
+          timer.setState({
+            status: 'exceeded',
+            mode: sessionType,
+            totalDuration: s.duration,
+            remainingSeconds: 0,
+            sessionId: s.id,
+            startTime: s.startTime,
+            completedAt: completedDate,
+            exceededSeconds,
+          });
+          setCheckedIncomplete(true);
+          return;
+        }
       }
 
       // If no incomplete, check for recent focus/break sessions that exceeded
       const exceededResult = await session.checkRecentExceeded();
       if (exceededResult.status === 'exceeded') {
-        const sessionType = exceededResult.session.type;
-        setActiveMode(sessionType);
-        setSelectedDuration(exceededResult.session.duration);
+        const { session: s } = exceededResult;
+        const sessionType = s.type;
 
-        // Set timer to exceeded state
-        timer.setState({
-          status: 'exceeded',
-          mode: sessionType,
-          totalDuration: exceededResult.session.duration,
-          remainingSeconds: 0,
-          sessionId: exceededResult.session.id,
-          startTime: exceededResult.session.startTime,
-          completedAt: exceededResult.session.completedAt,
-          exceededSeconds: exceededResult.exceededSeconds,
-        });
+        const completedDate = s.completedAt
+          ? typeof (s.completedAt as any).toDate === 'function'
+            ? (s.completedAt as any).toDate()
+            : new Date(s.completedAt)
+          : null;
+
+        if (completedDate) {
+          setActiveMode(sessionType);
+          setSelectedDuration(s.duration);
+
+          const exceededSeconds = Math.max(0, differenceInSeconds(new Date(), completedDate));
+
+          // Set timer to exceeded state
+          timer.setState({
+            status: 'exceeded',
+            mode: sessionType,
+            totalDuration: s.duration,
+            remainingSeconds: 0,
+            sessionId: s.id,
+            startTime: s.startTime,
+            completedAt: completedDate,
+            exceededSeconds,
+          });
+        }
       }
 
       setCheckedIncomplete(true);
