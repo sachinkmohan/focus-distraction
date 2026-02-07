@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import type { TimerMode } from '@/types';
 
 interface ExceededTimerDisplayProps {
+  startTime: Date;
   completedAt: Date;
   exceededSeconds: number;
   duration: number;
@@ -11,6 +12,7 @@ interface ExceededTimerDisplayProps {
 }
 
 export function ExceededTimerDisplay({
+  startTime,
   completedAt,
   exceededSeconds,
   duration,
@@ -58,9 +60,13 @@ export function ExceededTimerDisplay({
     <div className="flex flex-col items-center gap-3 py-4">
       <div className="text-center">
         <p className="text-sm text-gray-600">
-          {formatDurationLabel(duration)} {config.label} ended at
+          {formatDurationLabel(duration)} {config.label}
         </p>
-        <p className="text-lg font-semibold text-gray-900">{format(completedAt, 'h:mm a')}</p>
+        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-gray-900">
+          <span>{format(startTime, 'h:mm a')}</span>
+          <span className="text-gray-400 font-normal">→</span>
+          <span>{format(completedAt, 'h:mm a')}</span>
+        </div>
       </div>
 
       <div className="text-center">

@@ -55,7 +55,14 @@ export function BreakTimerPage() {
         </div>
       )}
 
-      {isRunning && <TimerDisplay remainingSeconds={timer.state.remainingSeconds} mode="break" />}
+      {isRunning && (
+        <TimerDisplay
+          remainingSeconds={timer.state.remainingSeconds}
+          mode="break"
+          startTime={timer.state.startTime}
+          totalDuration={timer.state.totalDuration}
+        />
+      )}
 
       {isIdle && (
         <>
