@@ -71,12 +71,26 @@ export function UnifiedTimerPage() {
         const { session: s } = incompleteResult;
         const sessionType = s.type;
 
-        // Ensure completedAt is a Date object (handling Firestore Timestamp if necessary)
-        const completedDate = s.completedAt
-          ? typeof (s.completedAt as any).toDate === 'function'
-            ? (s.completedAt as any).toDate()
-            : new Date(s.completedAt)
-          : null;
+        // Ensure completedAt is a Date object (handling Firestore Timestamp, numeric seconds, or Date)
+        const completedAtRaw = s.completedAt as any;
+        let completedDate: Date | null = null;
+
+        if (completedAtRaw) {
+          if (typeof completedAtRaw.toDate === 'function') {
+            completedDate = completedAtRaw.toDate();
+          } else if (typeof completedAtRaw.seconds === 'number') {
+            completedDate = new Date(
+              completedAtRaw.seconds * 1000 + (completedAtRaw.nanoseconds || 0) / 1e6,
+            );
+          } else if (typeof completedAtRaw === 'number') {
+            completedDate = new Date(completedAtRaw * 1000);
+          } else if (completedAtRaw instanceof Date) {
+            completedDate = completedAtRaw;
+          } else {
+            console.warn('Invalid completedAt format:', completedAtRaw);
+            completedDate = null;
+          }
+        }
 
         if (completedDate) {
           setActiveMode(sessionType);
@@ -106,11 +120,26 @@ export function UnifiedTimerPage() {
         const { session: s } = exceededResult;
         const sessionType = s.type;
 
-        const completedDate = s.completedAt
-          ? typeof (s.completedAt as any).toDate === 'function'
-            ? (s.completedAt as any).toDate()
-            : new Date(s.completedAt)
-          : null;
+        // Ensure completedAt is a Date object (handling Firestore Timestamp, numeric seconds, or Date)
+        const completedAtRaw = s.completedAt as any;
+        let completedDate: Date | null = null;
+
+        if (completedAtRaw) {
+          if (typeof completedAtRaw.toDate === 'function') {
+            completedDate = completedAtRaw.toDate();
+          } else if (typeof completedAtRaw.seconds === 'number') {
+            completedDate = new Date(
+              completedAtRaw.seconds * 1000 + (completedAtRaw.nanoseconds || 0) / 1e6,
+            );
+          } else if (typeof completedAtRaw === 'number') {
+            completedDate = new Date(completedAtRaw * 1000);
+          } else if (completedAtRaw instanceof Date) {
+            completedDate = completedAtRaw;
+          } else {
+            console.warn('Invalid completedAt format:', completedAtRaw);
+            completedDate = null;
+          }
+        }
 
         if (completedDate) {
           setActiveMode(sessionType);
