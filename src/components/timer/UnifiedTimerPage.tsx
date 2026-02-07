@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { differenceInSeconds } from 'date-fns';
 import { useTimer } from '@/hooks/useTimer';
 import { useSession } from '@/hooks/useSession';
 import { useRecentDurations } from '@/hooks/useRecentDurations';
@@ -65,24 +66,99 @@ export function UnifiedTimerPage() {
         return;
       }
 
+      // If a session was just marked completed, handle it as exceeded immediately
+      if (incompleteResult.status === 'completed') {
+        const { session: s } = incompleteResult;
+        const sessionType = s.type;
+
+        // Ensure completedAt is a Date object (handling Firestore Timestamp, numeric seconds, or Date)
+        const completedAtRaw = s.completedAt as any;
+        let completedDate: Date | null = null;
+
+        if (completedAtRaw) {
+          if (typeof completedAtRaw.toDate === 'function') {
+            completedDate = completedAtRaw.toDate();
+          } else if (typeof completedAtRaw.seconds === 'number') {
+            completedDate = new Date(
+              completedAtRaw.seconds * 1000 + (completedAtRaw.nanoseconds || 0) / 1e6,
+            );
+          } else if (typeof completedAtRaw === 'number') {
+            completedDate = new Date(completedAtRaw * 1000);
+          } else if (completedAtRaw instanceof Date) {
+            completedDate = completedAtRaw;
+          } else {
+            console.warn('Invalid completedAt format:', completedAtRaw);
+            completedDate = null;
+          }
+        }
+
+        if (completedDate) {
+          setActiveMode(sessionType);
+          setSelectedDuration(s.duration);
+
+          const exceededSeconds = Math.max(0, differenceInSeconds(new Date(), completedDate));
+
+          // Set timer to exceeded state
+          timer.setState({
+            status: 'exceeded',
+            mode: sessionType,
+            totalDuration: s.duration,
+            remainingSeconds: 0,
+            sessionId: s.id,
+            startTime: s.startTime,
+            completedAt: completedDate,
+            exceededSeconds,
+          });
+          setCheckedIncomplete(true);
+          return;
+        }
+      }
+
       // If no incomplete, check for recent focus/break sessions that exceeded
       const exceededResult = await session.checkRecentExceeded();
       if (exceededResult.status === 'exceeded') {
-        const sessionType = exceededResult.session.type;
-        setActiveMode(sessionType);
-        setSelectedDuration(exceededResult.session.duration);
+        const { session: s } = exceededResult;
+        const sessionType = s.type;
 
-        // Set timer to exceeded state
-        timer.setState({
-          status: 'exceeded',
-          mode: sessionType,
-          totalDuration: exceededResult.session.duration,
-          remainingSeconds: 0,
-          sessionId: exceededResult.session.id,
-          startTime: exceededResult.session.startTime,
-          completedAt: exceededResult.session.completedAt,
-          exceededSeconds: exceededResult.exceededSeconds,
-        });
+        // Ensure completedAt is a Date object (handling Firestore Timestamp, numeric seconds, or Date)
+        const completedAtRaw = s.completedAt as any;
+        let completedDate: Date | null = null;
+
+        if (completedAtRaw) {
+          if (typeof completedAtRaw.toDate === 'function') {
+            completedDate = completedAtRaw.toDate();
+          } else if (typeof completedAtRaw.seconds === 'number') {
+            completedDate = new Date(
+              completedAtRaw.seconds * 1000 + (completedAtRaw.nanoseconds || 0) / 1e6,
+            );
+          } else if (typeof completedAtRaw === 'number') {
+            completedDate = new Date(completedAtRaw * 1000);
+          } else if (completedAtRaw instanceof Date) {
+            completedDate = completedAtRaw;
+          } else {
+            console.warn('Invalid completedAt format:', completedAtRaw);
+            completedDate = null;
+          }
+        }
+
+        if (completedDate) {
+          setActiveMode(sessionType);
+          setSelectedDuration(s.duration);
+
+          const exceededSeconds = Math.max(0, differenceInSeconds(new Date(), completedDate));
+
+          // Set timer to exceeded state
+          timer.setState({
+            status: 'exceeded',
+            mode: sessionType,
+            totalDuration: s.duration,
+            remainingSeconds: 0,
+            sessionId: s.id,
+            startTime: s.startTime,
+            completedAt: completedDate,
+            exceededSeconds,
+          });
+        }
       }
 
       setCheckedIncomplete(true);

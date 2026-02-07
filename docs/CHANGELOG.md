@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-07 - Update 11: Robust Exceeded Session Detection
+
+### Bug Fixes
+
+**Robust Exceeded Time for Cool-off and Focus**
+- Fixed an issue where "cool off" exceeded sessions were sometimes not detected or showed incorrect time when reopening the app.
+- Improved the recovery logic to immediately use the session found by `checkIncomplete` if it was just marked as completed.
+- This prevents race conditions or stale Firestore queries from showing the wrong exceeded time (or no exceeded banner at all).
+
 ## 2026-02-07 - Update 10: Fixed Exceeded Time Calculation on Restart
 
 ### Bug Fixes
