@@ -78,7 +78,14 @@ export function TimerPage() {
       />
 
       {/* Timer Display - visible when running */}
-      {isRunning && <TimerDisplay remainingSeconds={timer.state.remainingSeconds} mode="focus" />}
+      {isRunning && (
+        <TimerDisplay
+          remainingSeconds={timer.state.remainingSeconds}
+          mode="focus"
+          startTime={timer.state.startTime}
+          totalDuration={timer.state.totalDuration}
+        />
+      )}
 
       {/* Duration selection - visible when idle */}
       {isIdle && (

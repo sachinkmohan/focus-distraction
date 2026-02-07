@@ -1,5 +1,53 @@
 # Changelog
 
+## 2026-02-07 - Update 9: Timer Visualization & Check-in Robustness
+
+### Features Added
+
+**Timer Start & End Times**
+- Added start and expected end times to the active timer display
+- Shows "h:mm AM/PM → h:mm AM/PM" below the countdown
+- Helps users plan their time by knowing exactly when a session will finish
+- Applied to all modes: Focus, Break, and Cool-off
+
+**Enhanced Exceeded Banner**
+- Updated the "Session Complete" banner to show the full time range
+- Displays the session's start time and actual completion time
+- Consistent "Start → End" visualization across the app
+
+### Improvements
+
+**Check-in Status Robustness**
+- Added comprehensive error handling for check-in status loading
+- Implemented "Retry" button when status fails to load from Firestore
+- Handled null/undefined responses for users with unknown limits
+- Prevents UI from hanging in a "Loading..." state indefinitely
+
+**UI Consistency**
+- Unified time range formatting using `date-fns`
+- Adjusted spacing and typography for better readability of timing info
+- Ensured legacy components (`TimerPage`, `BreakTimerPage`) stay in sync with UI standards
+
+### Technical
+
+**UI Components:**
+- Updated `TimerDisplay` to accept `startTime` and `totalDuration` props
+- Updated `ExceededTimerDisplay` to show `startTime` alongside `completedAt`
+- Integrated `addSeconds` from `date-fns` for accurate end-time calculation
+
+**State Management:**
+- Added retry logic to `UnifiedTimerPage` for check-in status fetching
+- Enhanced null-safety when reading session data from Firestore
+
+### Files Modified
+- `src/components/timer/TimerDisplay.tsx` - Added start/end time display logic
+- `src/components/timer/ExceededTimerDisplay.tsx` - Updated to show session time range
+- `src/components/timer/UnifiedTimerPage.tsx` - Passed new props and added check-in error handling
+- `src/components/timer/TimerPage.tsx` - Updated props (consistency)
+- `src/components/break/BreakTimerPage.tsx` - Updated props (consistency)
+
+---
+
 ## 2026-02-06 - Update 8: Settings Lock & CodeRabbit Fixes
 
 ### Features Added

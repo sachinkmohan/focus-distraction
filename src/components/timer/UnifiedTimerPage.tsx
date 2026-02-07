@@ -368,12 +368,18 @@ export function UnifiedTimerPage() {
 
       {/* Timer Display - visible when running */}
       {isRunning && (
-        <TimerDisplay remainingSeconds={timer.state.remainingSeconds} mode={activeMode} />
+        <TimerDisplay
+          remainingSeconds={timer.state.remainingSeconds}
+          mode={activeMode}
+          startTime={timer.state.startTime}
+          totalDuration={timer.state.totalDuration}
+        />
       )}
 
       {/* Exceeded Display - for timer after completion */}
-      {isExceeded && timer.state.completedAt && (
+      {isExceeded && timer.state.completedAt && timer.state.startTime && (
         <ExceededTimerDisplay
+          startTime={timer.state.startTime}
           completedAt={timer.state.completedAt}
           exceededSeconds={timer.state.exceededSeconds}
           duration={timer.state.totalDuration}
