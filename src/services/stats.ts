@@ -3,6 +3,7 @@ import { querySessionsInRange } from './sessions';
 import { getTodayRange, getThisWeekRange, getLast4WeeksRanges } from '@/utils/date';
 import { CHECKIN_BASE_LIMIT } from '@/utils/constants';
 import { getUserSettings } from './settings';
+import { differenceInCalendarDays, startOfWeek } from 'date-fns';
 
 export interface StatsSummary {
   sessionsCompleted: number;
@@ -11,9 +12,10 @@ export interface StatsSummary {
   cooloffSeconds: number;
   checkinsUsed: number;
   checkinsAllowed?: number;
+  daysInPeriod: number;
 }
 
-function summarize(sessions: Session[]): StatsSummary {
+function summarize(sessions: Session[], daysInPeriod: number = 1): StatsSummary {
   // Only count focus sessions that were completed fully (not interrupted)
   const completedFocusSessions = sessions.filter(
     (s) => s.type === 'focus' && !s.interrupted
@@ -37,6 +39,7 @@ function summarize(sessions: Session[]): StatsSummary {
     breakSeconds,
     cooloffSeconds,
     checkinsUsed,
+    daysInPeriod,
   };
 }
 
@@ -102,7 +105,10 @@ export async function getYesterdayStats(userId: string): Promise<StatsSummary> {
 
 export async function getThisWeekStats(userId: string): Promise<StatsSummary> {
   const { start, end } = getThisWeekRange();
-  return summarize(await querySessionsInRange(userId, start, end));
+  const now = new Date();
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const daysElapsed = Math.min(7, Math.max(1, differenceInCalendarDays(now, weekStart) + 1));
+  return summarize(await querySessionsInRange(userId, start, end), daysElapsed);
 }
 
 export async function getLast4WeeksStats(
@@ -112,7 +118,7 @@ export async function getLast4WeeksStats(
   return Promise.all(
     ranges.map(async (range) => ({
       label: range.label,
-      ...summarize(await querySessionsInRange(userId, range.start, range.end)),
+      ...summarize(await querySessionsInRange(userId, range.start, range.end), 7),
     })),
   );
 }

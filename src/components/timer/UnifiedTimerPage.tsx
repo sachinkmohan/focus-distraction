@@ -317,67 +317,66 @@ export function UnifiedTimerPage() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-4 py-8">
-          <div className="h-32 w-32 rounded-full bg-indigo-100 flex items-center justify-center">
-            <span className="text-4xl">✓</span>
+        <div className="flex items-start gap-4 py-4">
+          <div className="h-16 w-16 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
+            <span className="text-2xl">✓</span>
           </div>
-          {checkinStatus && (
-            <>
-              <p className="text-2xl font-bold text-gray-900">
-                {checkinStatus.used}/{checkinStatus.limit}
-              </p>
-              <p className="text-sm text-gray-500">Check-ins Today</p>
-              <p className="text-sm text-indigo-600 mt-2">
-                {checkinStatus.minutesToNextBonus} more min to earn next bonus
-              </p>
-
-              {/* Bonus Interval Dropdown with Lock */}
-              <div className="mt-4 w-full max-w-xs">
-                <label htmlFor="bonus-interval" className="block text-xs text-gray-600 mb-1">
-                  Earn bonus check-in every:
-                </label>
-                <div className="relative">
-                  <select
-                    id="bonus-interval"
-                    value={settings.checkinBonusInterval}
-                    onChange={handleIntervalChange}
-                    disabled={settings.settingsLocked}
-                    className={`w-full min-h-[44px] px-3 py-2 pr-12 border border-gray-300 rounded-lg text-sm font-medium ${
-                      settings.settingsLocked
-                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
-                        : 'bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
-                    }`}
-                  >
-                    {CHECKIN_INTERVAL_OPTIONS.map((minutes) => (
-                      <option key={minutes} value={minutes}>
-                        {minutes} minutes
-                      </option>
-                    ))}
-                  </select>
-                  {/* Lock/Unlock toggle button */}
-                  <button
-                    onClick={settings.settingsLocked ? () => setShowUnlockModal(true) : handleLockSettings}
-                    className={`absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center ${
-                      settings.settingsLocked
-                        ? 'text-gray-400 hover:text-gray-600'
-                        : 'text-indigo-400 hover:text-indigo-600'
-                    }`}
-                    aria-label={settings.settingsLocked ? 'Unlock settings' : 'Lock settings'}
-                  >
-                    {settings.settingsLocked ? (
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z" />
-                      </svg>
-                    )}
-                  </button>
+          <div className="flex flex-col gap-1 min-w-0">
+            {checkinStatus ? (
+              <>
+                <p className="text-lg font-bold text-gray-900">
+                  {checkinStatus.used}/{checkinStatus.limit} <span className="text-sm font-normal text-gray-500">Check-ins Today</span>
+                </p>
+                <p className="text-xs text-indigo-600">
+                  {checkinStatus.minutesToNextBonus} more min to earn next bonus
+                </p>
+                {/* Bonus Interval Dropdown with Lock */}
+                <div className="mt-1">
+                  <div className="relative">
+                    <select
+                      id="bonus-interval"
+                      value={settings.checkinBonusInterval}
+                      onChange={handleIntervalChange}
+                      disabled={settings.settingsLocked}
+                      className={`w-full min-h-[44px] px-3 py-2 pr-12 border border-gray-300 rounded-lg text-sm font-medium ${
+                        settings.settingsLocked
+                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
+                          : 'bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
+                      }`}
+                    >
+                      {CHECKIN_INTERVAL_OPTIONS.map((minutes) => (
+                        <option key={minutes} value={minutes}>
+                          Every {minutes} min
+                        </option>
+                      ))}
+                    </select>
+                    {/* Lock/Unlock toggle button */}
+                    <button
+                      onClick={settings.settingsLocked ? () => setShowUnlockModal(true) : handleLockSettings}
+                      className={`absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center ${
+                        settings.settingsLocked
+                          ? 'text-gray-400 hover:text-gray-600'
+                          : 'text-indigo-400 hover:text-indigo-600'
+                      }`}
+                      aria-label={settings.settingsLocked ? 'Unlock settings' : 'Lock settings'}
+                    >
+                      {settings.settingsLocked ? (
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            ) : (
+              <p className="text-sm text-gray-500">Loading check-in status...</p>
+            )}
+          </div>
         </div>
       )}
 
@@ -437,8 +436,8 @@ export function UnifiedTimerPage() {
             </button>
 
             {/* Cool Off Timer Presets */}
-            <div className="border-t border-gray-200 pt-4 mt-2">
-              <p className="text-sm text-gray-600 text-center mb-3">Cool Off Timer</p>
+            <div className="pt-2 mt-1">
+              <p className="text-xs text-gray-400 text-center mb-2 uppercase tracking-wide">Cool Off Timer</p>
               <QuickSelectButtons
                 presets={COOLOFF_PRESETS}
                 recentDurations={[]}

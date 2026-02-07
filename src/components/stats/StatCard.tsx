@@ -47,6 +47,11 @@ export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatC
         <div>
           <p className="text-xl font-bold text-amber-700">{formatHoursMinutes(stats.cooloffSeconds)}</p>
           <p className="text-xs text-gray-500">Cool Off</p>
+          {stats.daysInPeriod > 1 && stats.cooloffSeconds > 0 && (
+            <p className="text-xs text-amber-600">
+              ~{formatHoursMinutes(Math.round(stats.cooloffSeconds / stats.daysInPeriod))} / day
+            </p>
+          )}
         </div>
         <div>
           <p className="text-xl font-bold text-indigo-700">
