@@ -27,7 +27,7 @@ export function UnifiedTimerPage() {
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [checkinStatus, setCheckinStatus] = useState<{
     used: number;
-    limit: number;
+    limit: number | null;
     minutesToNextBonus: number;
   } | null>(null);
   const [checkinStatusError, setCheckinStatusError] = useState(false);
@@ -109,10 +109,10 @@ export function UnifiedTimerPage() {
               minutesToNextBonus: status.minutesToNextBonus,
             });
           } else {
-            // Handle null/undefined response as empty state (0/0 check-ins)
+            // Handle null/undefined response: limit unknown, used 0, no bonus progress
             setCheckinStatus({
               used: 0,
-              limit: 0,
+              limit: null,
               minutesToNextBonus: 0,
             });
           }
@@ -190,7 +190,7 @@ export function UnifiedTimerPage() {
     const wasCooloff = activeMode === 'cooloff';
     timer.reset();
     setSelectedDuration(null);
-    setPickerKey(prev => prev + 1); // Force DurationPicker to reset
+    setPickerKey((prev) => prev + 1); // Force DurationPicker to reset
     if (wasCooloff) {
       setActiveMode('checkin');
     }
@@ -335,25 +335,26 @@ export function UnifiedTimerPage() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-4 py-6">
+        <div className="flex flex-col items-center gap-4 pt-6">
           <div className="h-32 w-32 rounded-full bg-indigo-100 flex items-center justify-center">
             <span className="text-4xl">✓</span>
           </div>
           {checkinStatus ? (
-            <div className="flex flex-col gap-2 text-center w-full">
+            <div className="flex flex-col gap-1 text-center w-full">
               <p className="text-2xl font-bold text-gray-900">
-                {checkinStatus.used}/{checkinStatus.limit}
+                {checkinStatus.used}/{checkinStatus.limit ?? '?'}
               </p>
               <p className="text-sm text-gray-500">Check-ins Today</p>
               <p className="text-sm text-indigo-600">
-                {checkinStatus.minutesToNextBonus} more min to earn next bonus
+                <span className="text-xl">{checkinStatus.minutesToNextBonus}</span> more min to earn
+                next bonus
               </p>
             </div>
           ) : checkinStatusError ? (
             <div className="text-center">
               <p className="text-sm text-red-600 mb-2">Failed to load check-in status</p>
               <button
-                onClick={() => setCheckinRetryCount(prev => prev + 1)}
+                onClick={() => setCheckinRetryCount((prev) => prev + 1)}
                 className="min-h-[44px] min-w-[44px] px-3 py-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded"
               >
                 Retry
@@ -366,7 +367,9 @@ export function UnifiedTimerPage() {
       )}
 
       {/* Timer Display - visible when running */}
-      {isRunning && <TimerDisplay remainingSeconds={timer.state.remainingSeconds} mode={activeMode} />}
+      {isRunning && (
+        <TimerDisplay remainingSeconds={timer.state.remainingSeconds} mode={activeMode} />
+      )}
 
       {/* Exceeded Display - for timer after completion */}
       {isExceeded && timer.state.completedAt && (
@@ -393,7 +396,11 @@ export function UnifiedTimerPage() {
             />
           </div>
           <div className="border-t border-gray-200 pt-4">
-            <DurationPicker key={pickerKey} onDurationSelect={handleDurationSelect} disabled={false} />
+            <DurationPicker
+              key={pickerKey}
+              onDurationSelect={handleDurationSelect}
+              disabled={false}
+            />
           </div>
           {selectedDuration && selectedDuration > 0 && (
             <p className="text-center text-sm text-gray-500">
@@ -405,18 +412,27 @@ export function UnifiedTimerPage() {
       )}
 
       {/* Controls */}
-      {!isExceeded && (
-        activeMode === 'checkin' ? (
+      {!isExceeded &&
+        (activeMode === 'checkin' ? (
           <>
             {/* Check-In Button */}
             <button
               onClick={handleCheckIn}
-              disabled={isCheckingIn || !!(checkinStatus && checkinStatus.used >= checkinStatus.limit)}
+              disabled={
+                isCheckingIn ||
+                !!(
+                  checkinStatus &&
+                  checkinStatus.limit !== null &&
+                  checkinStatus.used >= checkinStatus.limit
+                )
+              }
               className="w-full min-h-[48px] rounded-xl px-6 py-3 text-lg font-semibold text-white disabled:opacity-40 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed"
             >
               {isCheckingIn
                 ? 'Checking In...'
-                : checkinStatus && checkinStatus.used >= checkinStatus.limit
+                : checkinStatus &&
+                    checkinStatus.limit !== null &&
+                    checkinStatus.used >= checkinStatus.limit
                   ? 'Daily Limit Reached'
                   : 'Check In'}
             </button>
@@ -429,13 +445,13 @@ export function UnifiedTimerPage() {
               <label htmlFor="bonus-interval" className="block text-sm text-gray-700 mb-2">
                 Earn bonus check-in every:
               </label>
-              <div className="relative">
+              <div className="flex items-center gap-2">
                 <select
                   id="bonus-interval"
                   value={settings.checkinBonusInterval}
                   onChange={handleIntervalChange}
                   disabled={settings.settingsLocked}
-                  className={`w-full min-h-[44px] px-3 py-2 pr-12 border border-gray-300 rounded-lg text-sm font-medium ${
+                  className={`flex-1 min-h-[44px] px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium ${
                     settings.settingsLocked
                       ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
                       : 'bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
@@ -447,13 +463,15 @@ export function UnifiedTimerPage() {
                     </option>
                   ))}
                 </select>
-                {/* Lock/Unlock toggle button */}
+                {/* Lock/Unlock toggle button - sibling, not overlapping */}
                 <button
-                  onClick={settings.settingsLocked ? () => setShowUnlockModal(true) : handleLockSettings}
-                  className={`absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center ${
+                  onClick={
+                    settings.settingsLocked ? () => setShowUnlockModal(true) : handleLockSettings
+                  }
+                  className={`shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors ${
                     settings.settingsLocked
-                      ? 'text-gray-400 hover:text-gray-600'
-                      : 'text-indigo-400 hover:text-indigo-600'
+                      ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                      : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100'
                   }`}
                   aria-label={settings.settingsLocked ? 'Unlock settings' : 'Lock settings'}
                 >
@@ -475,9 +493,7 @@ export function UnifiedTimerPage() {
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 text-center">
                 Need a Break?
               </h3>
-              <p className="text-xs text-gray-500 text-center mb-3">
-                Start a cool-off timer
-              </p>
+              <p className="text-xs text-gray-500 text-center mb-3">Start a cool-off timer</p>
               <QuickSelectButtons
                 presets={COOLOFF_PRESETS}
                 recentDurations={[]}
@@ -503,8 +519,7 @@ export function UnifiedTimerPage() {
             canStart={isIdle && selectedDuration !== null && selectedDuration > 0}
             mode={activeMode}
           />
-        )
-      )}
+        ))}
       <UnlockSettingsModal
         isOpen={showUnlockModal}
         onClose={() => setShowUnlockModal(false)}
