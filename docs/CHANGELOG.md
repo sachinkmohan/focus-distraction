@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-02-07 - Update 10: Fixed Exceeded Time Calculation on Restart
+
+### Bug Fixes
+
+**Accurate Exceeded Time After App Restart**
+- Fixed a bug where sessions ending while the app was closed would reset their "exceeded" time to 0 upon reopening.
+- Sessions now calculate their completion time based on `startTime + duration` instead of the current system time at the moment of reopening.
+- Ensures that if you return to the app 15 minutes late, the counter correctly shows "+15:00" instead of starting from zero.
+- This fix applies to Focus, Break, and Cool-off timers.
+
+### Technical
+
+**Backend Logic:**
+- Modified `completeSession` in `src/services/sessions.ts` to support back-dated `completedAt` timestamps.
+- Updated `checkIncompleteSession` to calculate the correct chronological end time when marking a finished session as complete.
+- Ensured `serverTimestamp()` is only used for active, real-time completions.
+
+### Files Modified
+- `src/services/sessions.ts` - Updated `completeSession` and `checkIncompleteSession` logic.
+
 ## 2026-02-07 - Update 9: Timer Visualization & Check-in Robustness
 
 ### Features Added
