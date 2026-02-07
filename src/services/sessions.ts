@@ -288,7 +288,7 @@ export async function checkRecentExceededSession(userId: string): Promise<
   const q = query(
     sessionsRef(userId),
     where('completed', '==', true),
-    where('type', 'in', ['focus', 'break']),
+    where('type', 'in', ['focus', 'break', 'cooloff']),
     where('interrupted', '==', false),
     where('dismissed', '==', false),
     where('completedAt', '>=', Timestamp.fromDate(twoHoursAgo)),

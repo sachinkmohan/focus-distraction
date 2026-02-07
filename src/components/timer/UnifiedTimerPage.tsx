@@ -3,7 +3,7 @@ import { useTimer } from '@/hooks/useTimer';
 import { useSession } from '@/hooks/useSession';
 import { useRecentDurations } from '@/hooks/useRecentDurations';
 import { useSettings } from '@/hooks/useSettings';
-import { FOCUS_PRESETS, BREAK_PRESETS } from '@/utils/constants';
+import { FOCUS_PRESETS, BREAK_PRESETS, COOLOFF_PRESETS } from '@/utils/constants';
 import { CHECKIN_INTERVAL_OPTIONS, type CheckinBonusInterval } from '@/types/settings';
 import { DurationPicker } from './DurationPicker';
 import { QuickSelectButtons } from './QuickSelectButtons';
@@ -143,20 +143,39 @@ export function UnifiedTimerPage() {
     await handleStart(duration);
   };
 
+  const handleCooloffQuickStart = async (duration: number) => {
+    if (typeof duration !== 'number') return;
+    setActiveMode('cooloff');
+    setSelectedDuration(duration);
+
+    const { sessionId, startTime } = await session.startSession(duration, 'cooloff');
+    timer.start(duration, 'cooloff', sessionId, startTime, async () => {
+      await session.endSession(sessionId);
+    });
+  };
+
   const handleStop = async () => {
+    const wasCooloff = activeMode === 'cooloff';
     if (timer.state.sessionId) {
       await session.stopSession(timer.state.sessionId, timer.elapsedSeconds);
     }
     timer.stop();
     setSelectedDuration(null);
+    if (wasCooloff) {
+      setActiveMode('checkin');
+    }
   };
 
   const [pickerKey, setPickerKey] = useState(0);
 
   const handleNewSession = () => {
+    const wasCooloff = activeMode === 'cooloff';
     timer.reset();
     setSelectedDuration(null);
     setPickerKey(prev => prev + 1); // Force DurationPicker to reset
+    if (wasCooloff) {
+      setActiveMode('checkin');
+    }
   };
 
   const handleDismissExceeded = async () => {
@@ -236,6 +255,7 @@ export function UnifiedTimerPage() {
   const isRunning = timer.state.status === 'running';
   const isExceeded = timer.state.status === 'exceeded';
   const isFocus = activeMode === 'focus';
+  const isCheckinTab = activeMode === 'checkin' || activeMode === 'cooloff';
   const presets = isFocus ? FOCUS_PRESETS : BREAK_PRESETS;
 
   return (
@@ -257,7 +277,7 @@ export function UnifiedTimerPage() {
           onClick={() => handleModeSwitch('checkin')}
           disabled={isRunning}
           className={`flex-1 min-h-[44px] rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
-            activeMode === 'checkin'
+            isCheckinTab
               ? 'bg-indigo-600 text-white'
               : 'text-gray-600 hover:text-gray-900 disabled:opacity-50'
           }`}
@@ -288,6 +308,12 @@ export function UnifiedTimerPage() {
         <div className="flex items-center justify-center py-8">
           <div className="h-32 w-32 rounded-full bg-blue-100 flex items-center justify-center">
             <span className="text-4xl">☕</span>
+          </div>
+        </div>
+      ) : activeMode === 'cooloff' ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="h-32 w-32 rounded-full bg-amber-100 flex items-center justify-center">
+            <span className="text-4xl">❄️</span>
           </div>
         </div>
       ) : (
@@ -369,8 +395,8 @@ export function UnifiedTimerPage() {
         />
       )}
 
-      {/* Duration selection - visible when idle and NOT check-in mode */}
-      {isIdle && activeMode !== 'checkin' && (
+      {/* Duration selection - visible when idle and NOT check-in/cooloff mode */}
+      {isIdle && !isCheckinTab && (
         <>
           <div className="flex flex-col gap-3">
             <p className="text-sm text-gray-600 text-center">Quick Start</p>
@@ -397,17 +423,39 @@ export function UnifiedTimerPage() {
       {/* Controls */}
       {!isExceeded && (
         activeMode === 'checkin' ? (
-          <button
-            onClick={handleCheckIn}
-            disabled={isCheckingIn || !!(checkinStatus && checkinStatus.used >= checkinStatus.limit)}
-            className="w-full min-h-[48px] rounded-xl px-6 py-3 text-lg font-semibold text-white disabled:opacity-40 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed"
-          >
-            {isCheckingIn
-              ? 'Checking In...'
-              : checkinStatus && checkinStatus.used >= checkinStatus.limit
-                ? 'Daily Limit Reached'
-                : 'Check In'}
-          </button>
+          <>
+            <button
+              onClick={handleCheckIn}
+              disabled={isCheckingIn || !!(checkinStatus && checkinStatus.used >= checkinStatus.limit)}
+              className="w-full min-h-[48px] rounded-xl px-6 py-3 text-lg font-semibold text-white disabled:opacity-40 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed"
+            >
+              {isCheckingIn
+                ? 'Checking In...'
+                : checkinStatus && checkinStatus.used >= checkinStatus.limit
+                  ? 'Daily Limit Reached'
+                  : 'Check In'}
+            </button>
+
+            {/* Cool Off Timer Presets */}
+            <div className="border-t border-gray-200 pt-4 mt-2">
+              <p className="text-sm text-gray-600 text-center mb-3">Cool Off Timer</p>
+              <QuickSelectButtons
+                presets={COOLOFF_PRESETS}
+                recentDurations={[]}
+                onSelect={handleCooloffQuickStart}
+                disabled={false}
+                variant={'cooloff'}
+              />
+            </div>
+          </>
+        ) : activeMode === 'cooloff' ? (
+          <TimerControls
+            status={timer.state.status}
+            onStart={handleStart}
+            onStop={handleStop}
+            canStart={false}
+            mode={activeMode}
+          />
         ) : (
           <TimerControls
             status={timer.state.status}

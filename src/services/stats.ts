@@ -8,6 +8,7 @@ export interface StatsSummary {
   sessionsCompleted: number;
   focusSeconds: number;
   breakSeconds: number;
+  cooloffSeconds: number;
   checkinsUsed: number;
   checkinsAllowed?: number;
 }
@@ -25,12 +26,16 @@ function summarize(sessions: Session[]): StatsSummary {
   const breakSeconds = sessions
     .filter((s) => s.type === 'break')
     .reduce((sum, s) => sum + s.duration, 0);
+  const cooloffSeconds = sessions
+    .filter((s) => s.type === 'cooloff')
+    .reduce((sum, s) => sum + s.duration, 0);
   const checkinsUsed = sessions.filter((s) => s.type === 'checkin').length;
 
   return {
     sessionsCompleted: completedFocusSessions.length,
     focusSeconds,
     breakSeconds,
+    cooloffSeconds,
     checkinsUsed,
   };
 }

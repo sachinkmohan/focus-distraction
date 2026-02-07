@@ -1,5 +1,5 @@
 export type TimerStatus = 'idle' | 'running' | 'exceeded';
-export type TimerMode = 'focus' | 'break' | 'checkin';
+export type TimerMode = 'focus' | 'break' | 'checkin' | 'cooloff';
 export type AnimationPhase = 'seed' | 'sprouting' | 'growing' | 'complete';
 
 export interface TimerState {

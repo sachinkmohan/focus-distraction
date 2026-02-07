@@ -107,6 +107,8 @@
 - Green "success" toast for focus time
 - Blue "info" toast for break time
 - Toast positioned at bottom-center for mobile-friendly placement
+- Error handling with 2-second error toasts if Firestore write fails
+- Proper async/await for both `addManualTime()` and `refresh()` calls
 
 ### Improvements
 
@@ -157,6 +159,12 @@
 - Installed `react-toastify` package
 - Added `ToastContainer` to `App.tsx` root
 - Configured with `autoClose: 1000, position: 'bottom-center'`
+
+**Code Quality (CodeRabbit Fixes):**
+- Replaced raw date math with `date-fns` library: `subHours(new Date(), 2)`
+- Updated comment: "break ended" → "session ended" (generalized)
+- Added try/catch error handling to manual time handlers
+- Consistent with project standards for date operations
 
 ### Files Modified
 - `src/services/sessions.ts` - Renamed function, changed query filter, fixed manual time dismissed flag
