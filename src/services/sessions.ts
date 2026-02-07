@@ -59,11 +59,15 @@ export async function createSession(
   return { sessionId: sessionDoc.id, startTime: now };
 }
 
-export async function completeSession(userId: string, sessionId: string): Promise<void> {
+export async function completeSession(
+  userId: string,
+  sessionId: string,
+  completedAt?: Date,
+): Promise<void> {
   const sessionDoc = doc(db, `users/${userId}/sessions/${sessionId}`);
   await updateDoc(sessionDoc, {
     completed: true,
-    completedAt: serverTimestamp(),
+    completedAt: completedAt ? Timestamp.fromDate(completedAt) : serverTimestamp(),
   });
 }
 
@@ -270,8 +274,9 @@ export async function checkIncompleteSession(userId: string): Promise<
   const session = toSession(docSnap.id, data);
 
   if (elapsed >= data.duration) {
-    await completeSession(userId, docSnap.id);
-    return { status: 'completed', session: { ...session, completed: true } };
+    const expectedEndTime = new Date(startTime.getTime() + data.duration * 1000);
+    await completeSession(userId, docSnap.id, expectedEndTime);
+    return { status: 'completed', session: { ...session, completed: true, completedAt: expectedEndTime } };
   }
 
   const remaining = Math.ceil(data.duration - elapsed);
