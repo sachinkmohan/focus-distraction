@@ -24,9 +24,12 @@ export function useSession() {
       if (!user) throw new Error('Not authenticated');
       const result = await createSession(user.uid, { duration, type });
 
-      const presets = type === 'focus' ? FOCUS_PRESETS : BREAK_PRESETS;
-      if (!presets.includes(duration)) {
-        await addRecentDuration(user.uid, duration);
+      // Only save recent durations for focus/break (cooloff uses fixed presets only)
+      if (type === 'focus' || type === 'break') {
+        const presets = type === 'focus' ? FOCUS_PRESETS : BREAK_PRESETS;
+        if (!presets.includes(duration)) {
+          await addRecentDuration(user.uid, duration);
+        }
       }
 
       return result;

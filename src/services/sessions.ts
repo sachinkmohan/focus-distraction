@@ -282,13 +282,13 @@ export async function checkRecentExceededSession(userId: string): Promise<
   | { status: 'none' }
   | { status: 'exceeded'; session: Session; exceededSeconds: number }
 > {
-  // Check for focus/break sessions completed in the last 2 hours (not interrupted)
+  // Check for focus/break/cooloff sessions completed in the last 2 hours (not interrupted)
   const twoHoursAgo = subHours(new Date(), 2);
 
   const q = query(
     sessionsRef(userId),
     where('completed', '==', true),
-    where('type', 'in', ['focus', 'break']),
+    where('type', 'in', ['focus', 'break', 'cooloff']),
     where('interrupted', '==', false),
     where('dismissed', '==', false),
     where('completedAt', '>=', Timestamp.fromDate(twoHoursAgo)),

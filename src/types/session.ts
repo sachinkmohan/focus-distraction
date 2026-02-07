@@ -1,4 +1,4 @@
-export type SessionType = 'focus' | 'break' | 'checkin';
+export type SessionType = 'focus' | 'break' | 'checkin' | 'cooloff';
 
 export interface Session {
   id: string;

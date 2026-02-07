@@ -42,10 +42,19 @@ export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatC
           )}
         </div>
       </div>
-      {/* Check-in stats */}
-      <div className="mt-3 pt-3 border-t border-gray-100">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-indigo-700">
+      {/* Cool Off & Check-in stats */}
+      <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2 text-center">
+        <div>
+          <p className="text-xl font-bold text-amber-700">{formatHoursMinutes(stats.cooloffSeconds)}</p>
+          <p className="text-xs text-gray-500">Cool Off</p>
+          {stats.daysInPeriod > 1 && stats.cooloffSeconds > 0 && (
+            <p className="text-xs text-amber-600">
+              ~{formatHoursMinutes(Math.round(stats.cooloffSeconds / stats.daysInPeriod))} / day
+            </p>
+          )}
+        </div>
+        <div>
+          <p className="text-xl font-bold text-indigo-700">
             {stats.checkinsUsed}
             {stats.checkinsAllowed !== undefined && `/${stats.checkinsAllowed}`}
           </p>

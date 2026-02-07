@@ -7,7 +7,7 @@
 **Settings Lock/Unlock Modal**
 - Added passphrase-protected lock for check-in bonus interval setting
 - Lock/unlock toggle button next to the interval dropdown
-- Passphrase: "I give up on discipline"
+- Passphrase required to unlock (intentionally not documented here)
 - Modal with confirmation message and unlock flow
 - Prevents impulsive changes to check-in settings
 - Settings remain locked until user consciously unlocks
@@ -44,7 +44,7 @@
 **Settings Lock Flow:**
 1. Check-in interval dropdown is locked by default (gray lock icon)
 2. Click lock icon → UnlockSettingsModal appears
-3. Type passphrase: "I give up on discipline"
+3. Enter the unlock passphrase when prompted
 4. Click "Unlock" or press Enter
 5. Modal shows "Unlocking..." while saving to Firestore
 6. On success → modal closes, dropdown becomes editable (open lock icon)
@@ -107,6 +107,8 @@
 - Green "success" toast for focus time
 - Blue "info" toast for break time
 - Toast positioned at bottom-center for mobile-friendly placement
+- Error handling with 2-second error toasts if Firestore write fails
+- Proper async/await for both `addManualTime()` and `refresh()` calls
 
 ### Improvements
 
@@ -157,6 +159,12 @@
 - Installed `react-toastify` package
 - Added `ToastContainer` to `App.tsx` root
 - Configured with `autoClose: 1000, position: 'bottom-center'`
+
+**Code Quality (CodeRabbit Fixes):**
+- Replaced raw date math with `date-fns` library: `subHours(new Date(), 2)`
+- Updated comment: "break ended" → "session ended" (generalized)
+- Added try/catch error handling to manual time handlers
+- Consistent with project standards for date operations
 
 ### Files Modified
 - `src/services/sessions.ts` - Renamed function, changed query filter, fixed manual time dismissed flag

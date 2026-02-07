@@ -3,7 +3,7 @@ import { useTimer } from '@/hooks/useTimer';
 import { useSession } from '@/hooks/useSession';
 import { useRecentDurations } from '@/hooks/useRecentDurations';
 import { useSettings } from '@/hooks/useSettings';
-import { FOCUS_PRESETS, BREAK_PRESETS } from '@/utils/constants';
+import { FOCUS_PRESETS, BREAK_PRESETS, COOLOFF_PRESETS } from '@/utils/constants';
 import { CHECKIN_INTERVAL_OPTIONS, type CheckinBonusInterval } from '@/types/settings';
 import { DurationPicker } from './DurationPicker';
 import { QuickSelectButtons } from './QuickSelectButtons';
@@ -143,20 +143,39 @@ export function UnifiedTimerPage() {
     await handleStart(duration);
   };
 
+  const handleCooloffQuickStart = async (duration: number) => {
+    if (typeof duration !== 'number') return;
+    setActiveMode('cooloff');
+    setSelectedDuration(duration);
+
+    const { sessionId, startTime } = await session.startSession(duration, 'cooloff');
+    timer.start(duration, 'cooloff', sessionId, startTime, async () => {
+      await session.endSession(sessionId);
+    });
+  };
+
   const handleStop = async () => {
+    const wasCooloff = activeMode === 'cooloff';
     if (timer.state.sessionId) {
       await session.stopSession(timer.state.sessionId, timer.elapsedSeconds);
     }
     timer.stop();
     setSelectedDuration(null);
+    if (wasCooloff) {
+      setActiveMode('checkin');
+    }
   };
 
   const [pickerKey, setPickerKey] = useState(0);
 
   const handleNewSession = () => {
+    const wasCooloff = activeMode === 'cooloff';
     timer.reset();
     setSelectedDuration(null);
     setPickerKey(prev => prev + 1); // Force DurationPicker to reset
+    if (wasCooloff) {
+      setActiveMode('checkin');
+    }
   };
 
   const handleDismissExceeded = async () => {
@@ -236,6 +255,7 @@ export function UnifiedTimerPage() {
   const isRunning = timer.state.status === 'running';
   const isExceeded = timer.state.status === 'exceeded';
   const isFocus = activeMode === 'focus';
+  const isCheckinTab = activeMode === 'checkin' || activeMode === 'cooloff';
   const presets = isFocus ? FOCUS_PRESETS : BREAK_PRESETS;
 
   return (
@@ -257,7 +277,7 @@ export function UnifiedTimerPage() {
           onClick={() => handleModeSwitch('checkin')}
           disabled={isRunning}
           className={`flex-1 min-h-[44px] rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
-            activeMode === 'checkin'
+            isCheckinTab
               ? 'bg-indigo-600 text-white'
               : 'text-gray-600 hover:text-gray-900 disabled:opacity-50'
           }`}
@@ -290,68 +310,73 @@ export function UnifiedTimerPage() {
             <span className="text-4xl">☕</span>
           </div>
         </div>
-      ) : (
-        <div className="flex flex-col items-center gap-4 py-8">
-          <div className="h-32 w-32 rounded-full bg-indigo-100 flex items-center justify-center">
-            <span className="text-4xl">✓</span>
+      ) : activeMode === 'cooloff' ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="h-32 w-32 rounded-full bg-amber-100 flex items-center justify-center">
+            <span className="text-4xl">❄️</span>
           </div>
-          {checkinStatus && (
-            <>
-              <p className="text-2xl font-bold text-gray-900">
-                {checkinStatus.used}/{checkinStatus.limit}
-              </p>
-              <p className="text-sm text-gray-500">Check-ins Today</p>
-              <p className="text-sm text-indigo-600 mt-2">
-                {checkinStatus.minutesToNextBonus} more min to earn next bonus
-              </p>
-
-              {/* Bonus Interval Dropdown with Lock */}
-              <div className="mt-4 w-full max-w-xs">
-                <label htmlFor="bonus-interval" className="block text-xs text-gray-600 mb-1">
-                  Earn bonus check-in every:
-                </label>
-                <div className="relative">
-                  <select
-                    id="bonus-interval"
-                    value={settings.checkinBonusInterval}
-                    onChange={handleIntervalChange}
-                    disabled={settings.settingsLocked}
-                    className={`w-full min-h-[44px] px-3 py-2 pr-12 border border-gray-300 rounded-lg text-sm font-medium ${
-                      settings.settingsLocked
-                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
-                        : 'bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
-                    }`}
-                  >
-                    {CHECKIN_INTERVAL_OPTIONS.map((minutes) => (
-                      <option key={minutes} value={minutes}>
-                        {minutes} minutes
-                      </option>
-                    ))}
-                  </select>
-                  {/* Lock/Unlock toggle button */}
-                  <button
-                    onClick={settings.settingsLocked ? () => setShowUnlockModal(true) : handleLockSettings}
-                    className={`absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center ${
-                      settings.settingsLocked
-                        ? 'text-gray-400 hover:text-gray-600'
-                        : 'text-indigo-400 hover:text-indigo-600'
-                    }`}
-                    aria-label={settings.settingsLocked ? 'Unlock settings' : 'Lock settings'}
-                  >
-                    {settings.settingsLocked ? (
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z" />
-                      </svg>
-                    )}
-                  </button>
+        </div>
+      ) : (
+        <div className="flex items-start gap-4 py-4">
+          <div className="h-16 w-16 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
+            <span className="text-2xl">✓</span>
+          </div>
+          <div className="flex flex-col gap-1 min-w-0">
+            {checkinStatus ? (
+              <>
+                <p className="text-lg font-bold text-gray-900">
+                  {checkinStatus.used}/{checkinStatus.limit} <span className="text-sm font-normal text-gray-500">Check-ins Today</span>
+                </p>
+                <p className="text-xs text-indigo-600">
+                  {checkinStatus.minutesToNextBonus} more min to earn next bonus
+                </p>
+                {/* Bonus Interval Dropdown with Lock */}
+                <div className="mt-1">
+                  <div className="relative">
+                    <select
+                      id="bonus-interval"
+                      value={settings.checkinBonusInterval}
+                      onChange={handleIntervalChange}
+                      disabled={settings.settingsLocked}
+                      className={`w-full min-h-[44px] px-3 py-2 pr-12 border border-gray-300 rounded-lg text-sm font-medium ${
+                        settings.settingsLocked
+                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-70'
+                          : 'bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
+                      }`}
+                    >
+                      {CHECKIN_INTERVAL_OPTIONS.map((minutes) => (
+                        <option key={minutes} value={minutes}>
+                          Every {minutes} min
+                        </option>
+                      ))}
+                    </select>
+                    {/* Lock/Unlock toggle button */}
+                    <button
+                      onClick={settings.settingsLocked ? () => setShowUnlockModal(true) : handleLockSettings}
+                      className={`absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center ${
+                        settings.settingsLocked
+                          ? 'text-gray-400 hover:text-gray-600'
+                          : 'text-indigo-400 hover:text-indigo-600'
+                      }`}
+                      aria-label={settings.settingsLocked ? 'Unlock settings' : 'Lock settings'}
+                    >
+                      {settings.settingsLocked ? (
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            ) : (
+              <p className="text-sm text-gray-500">Loading check-in status...</p>
+            )}
+          </div>
         </div>
       )}
 
@@ -369,8 +394,8 @@ export function UnifiedTimerPage() {
         />
       )}
 
-      {/* Duration selection - visible when idle and NOT check-in mode */}
-      {isIdle && activeMode !== 'checkin' && (
+      {/* Duration selection - visible when idle and NOT check-in/cooloff mode */}
+      {isIdle && !isCheckinTab && (
         <>
           <div className="flex flex-col gap-3">
             <p className="text-sm text-gray-600 text-center">Quick Start</p>
@@ -397,17 +422,39 @@ export function UnifiedTimerPage() {
       {/* Controls */}
       {!isExceeded && (
         activeMode === 'checkin' ? (
-          <button
-            onClick={handleCheckIn}
-            disabled={isCheckingIn || !!(checkinStatus && checkinStatus.used >= checkinStatus.limit)}
-            className="w-full min-h-[48px] rounded-xl px-6 py-3 text-lg font-semibold text-white disabled:opacity-40 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed"
-          >
-            {isCheckingIn
-              ? 'Checking In...'
-              : checkinStatus && checkinStatus.used >= checkinStatus.limit
-                ? 'Daily Limit Reached'
-                : 'Check In'}
-          </button>
+          <>
+            <button
+              onClick={handleCheckIn}
+              disabled={isCheckingIn || !!(checkinStatus && checkinStatus.used >= checkinStatus.limit)}
+              className="w-full min-h-[48px] rounded-xl px-6 py-3 text-lg font-semibold text-white disabled:opacity-40 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed"
+            >
+              {isCheckingIn
+                ? 'Checking In...'
+                : checkinStatus && checkinStatus.used >= checkinStatus.limit
+                  ? 'Daily Limit Reached'
+                  : 'Check In'}
+            </button>
+
+            {/* Cool Off Timer Presets */}
+            <div className="pt-2 mt-1">
+              <p className="text-xs text-gray-400 text-center mb-2 uppercase tracking-wide">Cool Off Timer</p>
+              <QuickSelectButtons
+                presets={COOLOFF_PRESETS}
+                recentDurations={[]}
+                onSelect={handleCooloffQuickStart}
+                disabled={isRunning}
+                variant={'cooloff'}
+              />
+            </div>
+          </>
+        ) : activeMode === 'cooloff' ? (
+          <TimerControls
+            status={timer.state.status}
+            onStart={handleStart}
+            onStop={handleStop}
+            canStart={false}
+            mode={activeMode}
+          />
         ) : (
           <TimerControls
             status={timer.state.status}

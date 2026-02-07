@@ -7,7 +7,12 @@ interface TimerDisplayProps {
 }
 
 export function TimerDisplay({ remainingSeconds, mode }: TimerDisplayProps) {
-  const colorClass = mode === 'focus' ? 'text-green-700' : 'text-blue-700';
+  const colorClass =
+    mode === 'focus'
+      ? 'text-green-700'
+      : mode === 'cooloff'
+        ? 'text-amber-700'
+        : 'text-blue-700';
 
   return (
     <div className="flex items-center justify-center py-4">
