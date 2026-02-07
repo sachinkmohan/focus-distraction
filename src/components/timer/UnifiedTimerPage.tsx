@@ -442,7 +442,7 @@ export function UnifiedTimerPage() {
                 presets={COOLOFF_PRESETS}
                 recentDurations={[]}
                 onSelect={handleCooloffQuickStart}
-                disabled={false}
+                disabled={isRunning}
                 variant={'cooloff'}
               />
             </div>
