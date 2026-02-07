@@ -31,6 +31,7 @@ export function UnifiedTimerPage() {
     minutesToNextBonus: number;
   } | null>(null);
   const [checkinStatusError, setCheckinStatusError] = useState(false);
+  const [checkinRetryCount, setCheckinRetryCount] = useState(0);
 
   const handleDurationSelect = (duration: number) => {
     setSelectedDuration(duration);
@@ -100,12 +101,21 @@ export function UnifiedTimerPage() {
       setCheckinStatusError(false);
       try {
         const status = await session.getCheckInStatus();
-        if (!cancelled && status) {
-          setCheckinStatus({
-            used: status.used,
-            limit: status.limit,
-            minutesToNextBonus: status.minutesToNextBonus,
-          });
+        if (!cancelled) {
+          if (status) {
+            setCheckinStatus({
+              used: status.used,
+              limit: status.limit,
+              minutesToNextBonus: status.minutesToNextBonus,
+            });
+          } else {
+            // Handle null/undefined response as empty state (0/0 check-ins)
+            setCheckinStatus({
+              used: 0,
+              limit: 0,
+              minutesToNextBonus: 0,
+            });
+          }
         }
       } catch (error) {
         console.error('Failed to load check-in status:', error);
@@ -121,8 +131,7 @@ export function UnifiedTimerPage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMode]);
+  }, [activeMode, checkinRetryCount]);
 
   const handleStart = async (duration?: number) => {
     const durationToUse = duration || selectedDuration;
@@ -341,11 +350,11 @@ export function UnifiedTimerPage() {
               </p>
             </div>
           ) : checkinStatusError ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center w-full">
+            <div className="text-center">
               <p className="text-sm text-red-600 mb-2">Failed to load check-in status</p>
               <button
-                onClick={() => setActiveMode('checkin')}
-                className="text-xs text-indigo-600 hover:text-indigo-700 underline"
+                onClick={() => setCheckinRetryCount(prev => prev + 1)}
+                className="min-h-[44px] min-w-[44px] px-3 py-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded"
               >
                 Retry
               </button>
