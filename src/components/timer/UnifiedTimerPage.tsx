@@ -65,6 +65,34 @@ export function UnifiedTimerPage() {
         return;
       }
 
+      // If a session was just marked completed, handle it as exceeded immediately
+      if (incompleteResult.status === 'completed') {
+        const { session: s } = incompleteResult;
+        const sessionType = s.type;
+        setActiveMode(sessionType);
+        setSelectedDuration(s.duration);
+
+        const now = new Date();
+        const exceededSeconds = Math.max(
+          0,
+          Math.floor((now.getTime() - s.completedAt!.getTime()) / 1000),
+        );
+
+        // Set timer to exceeded state
+        timer.setState({
+          status: 'exceeded',
+          mode: sessionType,
+          totalDuration: s.duration,
+          remainingSeconds: 0,
+          sessionId: s.id,
+          startTime: s.startTime,
+          completedAt: s.completedAt,
+          exceededSeconds,
+        });
+        setCheckedIncomplete(true);
+        return;
+      }
+
       // If no incomplete, check for recent focus/break sessions that exceeded
       const exceededResult = await session.checkRecentExceeded();
       if (exceededResult.status === 'exceeded') {
