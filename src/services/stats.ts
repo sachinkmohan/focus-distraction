@@ -3,7 +3,7 @@ import { querySessionsInRange } from './sessions';
 import { getTodayRange, getThisWeekRange, getLast4WeeksRanges } from '@/utils/date';
 import { CHECKIN_BASE_LIMIT } from '@/utils/constants';
 import { getUserSettings } from './settings';
-import { differenceInCalendarDays, startOfWeek } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
 
 export interface StatsSummary {
   sessionsCompleted: number;
@@ -106,8 +106,7 @@ export async function getYesterdayStats(userId: string): Promise<StatsSummary> {
 export async function getThisWeekStats(userId: string): Promise<StatsSummary> {
   const { start, end } = getThisWeekRange();
   const now = new Date();
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-  const daysElapsed = Math.min(7, Math.max(1, differenceInCalendarDays(now, weekStart) + 1));
+  const daysElapsed = Math.min(7, Math.max(1, differenceInCalendarDays(now, start) + 1));
   return summarize(await querySessionsInRange(userId, start, end), daysElapsed);
 }
 

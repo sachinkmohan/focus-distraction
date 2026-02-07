@@ -30,6 +30,7 @@ export function UnifiedTimerPage() {
     limit: number;
     minutesToNextBonus: number;
   } | null>(null);
+  const [checkinStatusError, setCheckinStatusError] = useState(false);
 
   const handleDurationSelect = (duration: number) => {
     setSelectedDuration(duration);
@@ -96,6 +97,7 @@ export function UnifiedTimerPage() {
     let cancelled = false;
 
     const loadStatus = async () => {
+      setCheckinStatusError(false);
       try {
         const status = await session.getCheckInStatus();
         if (!cancelled && status) {
@@ -107,9 +109,9 @@ export function UnifiedTimerPage() {
         }
       } catch (error) {
         console.error('Failed to load check-in status:', error);
-        // Reset to null on error to show a clean state
         if (!cancelled) {
           setCheckinStatus(null);
+          setCheckinStatusError(true);
         }
       }
     };
@@ -148,10 +150,17 @@ export function UnifiedTimerPage() {
     setActiveMode('cooloff');
     setSelectedDuration(duration);
 
-    const { sessionId, startTime } = await session.startSession(duration, 'cooloff');
-    timer.start(duration, 'cooloff', sessionId, startTime, async () => {
-      await session.endSession(sessionId);
-    });
+    try {
+      const { sessionId, startTime } = await session.startSession(duration, 'cooloff');
+      timer.start(duration, 'cooloff', sessionId, startTime, async () => {
+        await session.endSession(sessionId);
+      });
+    } catch (error) {
+      console.error('Failed to start cooloff session:', error);
+      // Reset to checkin mode on failure
+      setActiveMode('checkin');
+      setSelectedDuration(null);
+    }
   };
 
   const handleStop = async () => {
@@ -373,6 +382,16 @@ export function UnifiedTimerPage() {
                   </div>
                 </div>
               </>
+            ) : checkinStatusError ? (
+              <div className="text-center">
+                <p className="text-sm text-red-600 mb-2">Failed to load check-in status</p>
+                <button
+                  onClick={() => setActiveMode('checkin')}
+                  className="text-xs text-indigo-600 hover:text-indigo-700 underline"
+                >
+                  Retry
+                </button>
+              </div>
             ) : (
               <p className="text-sm text-gray-500">Loading check-in status...</p>
             )}
