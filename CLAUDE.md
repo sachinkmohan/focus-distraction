@@ -66,9 +66,10 @@ The timer system has two independent layers that work together:
 
 1. **Client Timer** (`useTimer` hook):
    - Manages countdown display and local state
-   - Statuses: `idle`, `running`, `completed`, `exceeded`
-   - Modes: `focus` (with tree animation), `break` (coffee icon)
+   - Statuses: `idle`, `running`, `exceeded`
+   - Modes: `focus` (tree animation), `break` (coffee icon), `checkin` (instant), `cooloff` (snowflake)
    - Does NOT directly interact with Firebase
+   - `onComplete` callback receives `completedAt: Date` (canonical end time)
 
 2. **Session Management** (`useSession` hook):
    - Handles Firebase session CRUD operations
@@ -79,7 +80,8 @@ The timer system has two independent layers that work together:
 3. **UnifiedTimerPage**: Coordinates both layers
    - Calls `session.startSession()` → creates Firebase record
    - Then calls `timer.start()` → starts countdown
-   - On completion: `timer` triggers callback → `session.endSession()` updates Firebase
+   - On completion: `timer` triggers `onComplete(completedAt)` → `session.endSession(id, completedAt)` updates Firebase
+   - `completedAt` is always `startTime + duration` (never `new Date()`) so it's correct even when the tick fires late due to backgrounding
 
 ### Session States
 
@@ -88,11 +90,11 @@ Sessions in Firestore have three key boolean flags:
 - `interrupted`: Session stopped early by user
 - `dismissed`: Break session exceeded warning was dismissed
 
-**Break Timer Special Behavior:**
-- When break timer reaches 0, it enters `exceeded` state
-- Shows warning banner with "time since break ended" counter
+**Exceeded State Behavior (Focus, Break, Cool-off):**
+- When any timer reaches 0, it enters `exceeded` state
+- Shows banner with time-since-ended counter (red for break, green for focus, amber for cool-off)
 - User can dismiss the warning (sets `dismissed: true`)
-- On app reload, checks for recent completed breaks that weren't dismissed
+- On app reload, `checkRecentExceededSession` queries `type in ['focus', 'break', 'cooloff']` within last 2 hours
 
 ### Routing & Navigation
 
@@ -118,7 +120,7 @@ users/{userId}/sessions/{sessionId}
   {
     startTime: Timestamp,
     duration: number, // seconds
-    type: 'focus' | 'break',
+    type: 'focus' | 'break' | 'checkin' | 'cooloff',
     completed: boolean,
     interrupted: boolean,
     dismissed: boolean,
@@ -157,10 +159,17 @@ Located in `src/components/tree/TreeAnimation.tsx`:
    startTime: (data.startTime as Timestamp).toDate()
    ```
 
-4. **Session resumption logic** (`checkIncompleteSession` in `sessions.ts`):
+4. **`completedAt` is always `startTime + duration`** (canonical rule):
+   - Never use `new Date()` or `serverTimestamp()` alone as `completedAt`
+   - Mobile browsers throttle/pause `setInterval` when backgrounded — the tick may fire minutes late
+   - `checkIncompleteSession` calculates `expectedEndTime = startTime + duration` when marking a session complete
+   - `useTimer` tick uses the same formula; passes it through `onComplete(completedAt)` → `endSession`
+   - This ensures the exceeded counter shows actual overtime, not "time since app opened"
+
+5. **Session resumption logic** (`checkIncompleteSession` in `sessions.ts`):
    - Queries for incomplete sessions on app load
    - Calculates elapsed time vs. duration
-   - Auto-completes if time expired
+   - Auto-completes if time expired (using `startTime + duration` as `completedAt`)
    - Returns remaining time if still in progress
 
 ## Styling
