@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-02-08 - Update 12: Fix Exceeded Time When App Backgrounded
+
+### Bug Fixes
+
+**Correct Exceeded Time After Returning from Background**
+- Fixed a bug where the exceeded timer showed a near-zero count (+00:21, +00:42) even though the break/focus/cool-off had ended several minutes ago.
+- Root cause: when the app is backgrounded (phone locked, tab hidden), the browser throttles/pauses `setInterval`. On return, the first tick used `new Date()` as `completedAt`, capturing the return time instead of when the timer actually ended.
+- Fix: `completedAt` is now always calculated as `startTime + duration` — the canonical scheduled end time — regardless of when the tick fires.
+- The correct `completedAt` is also forwarded through the `onComplete` callback to `endSession` → Firestore, so the stored timestamp is accurate too.
+- Covers all timer modes: Focus, Break, and Cool-off.
+
+### Technical
+
+- `useTimer.ts`: Changed `completedAt = new Date()` → `completedAt = new Date(startTime + duration)` in the tick completion transition. Also pre-calculates `exceededSeconds` immediately (so the counter starts at the right value, not 0).
+- `useSession.ts`: `endSession` now accepts an optional `completedAt?: Date` parameter and forwards it to `completeSession`.
+- `UnifiedTimerPage.tsx`: All three timer start/resume call sites thread `completedAt` through the callback chain to `endSession`.
+
+### Files Modified
+- `src/hooks/useTimer.ts` - Fixed `completedAt` calculation and callback signature
+- `src/hooks/useSession.ts` - Added `completedAt` parameter to `endSession`
+- `src/components/timer/UnifiedTimerPage.tsx` - Threaded `completedAt` through all timer callbacks
+
+---
+
 ## 2026-02-07 - Update 11: Robust Exceeded Session Detection
 
 ### Bug Fixes
