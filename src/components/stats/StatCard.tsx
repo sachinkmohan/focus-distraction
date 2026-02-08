@@ -18,7 +18,7 @@ export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatC
           <p className="text-xs text-gray-500">Sessions</p>
           {stats.daysInPeriod > 1 && stats.sessionsCompleted > 0 && (
             <p className="text-xs text-gray-400">
-              ~{Math.round(stats.sessionsCompleted / stats.daysInPeriod)} / day
+              ~{Math.max(1, Math.round(stats.sessionsCompleted / stats.daysInPeriod))} / day
             </p>
           )}
         </div>
