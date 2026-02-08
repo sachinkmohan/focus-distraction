@@ -35,6 +35,7 @@ function toSession(id: string, data: Record<string, unknown>): Session {
     dismissed: (data.dismissed as boolean) || false,
     completedAt: data.completedAt ? (data.completedAt as Timestamp).toDate() : null,
     createdAt: (data.createdAt as Timestamp).toDate(),
+    manual: data.manual as boolean | undefined,
   };
 }
 
@@ -248,6 +249,7 @@ export async function addManualTime(
     dismissed: true,
     completedAt: Timestamp.fromDate(now),
     createdAt: serverTimestamp(),
+    manual: true,
   });
 }
 
