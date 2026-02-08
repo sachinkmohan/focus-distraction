@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-02-08 - Update 13: Per-Day Averages for All Stats Metrics
+
+### Improvements
+
+**Per-Day Averages in Weekly Stats**
+- All five metrics now show a `~X / day` average sub-label in multi-day stat cards (This Week, Previous Weeks).
+- Previously only Cool Off showed this; now Sessions, Focus, Break, and Check-ins match the same pattern.
+- Today and Yesterday cards are unaffected (single-day periods don't need averages).
+- Averages are suppressed when the metric is zero to keep the UI clean.
+
+| Metric | Average format |
+|---|---|
+| Sessions | `~N / day` |
+| Focus | `~X h/m / day` |
+| Break | `~X h/m / day` |
+| Cool Off | `~X h/m / day` *(unchanged)* |
+| Check-ins | `~N / day` |
+
+### Files Modified
+- `src/components/stats/StatCard.tsx` - Added average sub-labels for Sessions, Focus, Break, Check-ins
+
+---
+
 ## 2026-02-08 - Update 12: Fix Exceeded Time When App Backgrounded
 
 ### Bug Fixes

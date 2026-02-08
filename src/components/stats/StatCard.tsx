@@ -16,10 +16,20 @@ export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatC
         <div>
           <p className="text-2xl font-bold text-gray-900">{stats.sessionsCompleted}</p>
           <p className="text-xs text-gray-500">Sessions</p>
+          {stats.daysInPeriod > 1 && stats.sessionsCompleted > 0 && (
+            <p className="text-xs text-gray-400">
+              ~{Math.max(1, Math.round(stats.sessionsCompleted / stats.daysInPeriod))} / day
+            </p>
+          )}
         </div>
         <div>
           <p className="text-xl font-bold text-green-700">{formatHoursMinutes(stats.focusSeconds)}</p>
           <p className="text-xs text-gray-500">Focus</p>
+          {stats.daysInPeriod > 1 && stats.focusSeconds > 0 && (
+            <p className="text-xs text-green-600">
+              ~{formatHoursMinutes(Math.round(stats.focusSeconds / stats.daysInPeriod))} / day
+            </p>
+          )}
           {onAddFocusTime && (
             <button
               onClick={onAddFocusTime}
@@ -32,6 +42,11 @@ export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatC
         <div>
           <p className="text-xl font-bold text-blue-700">{formatHoursMinutes(stats.breakSeconds)}</p>
           <p className="text-xs text-gray-500">Break</p>
+          {stats.daysInPeriod > 1 && stats.breakSeconds > 0 && (
+            <p className="text-xs text-blue-600">
+              ~{formatHoursMinutes(Math.round(stats.breakSeconds / stats.daysInPeriod))} / day
+            </p>
+          )}
           {onAddBreakTime && (
             <button
               onClick={onAddBreakTime}
@@ -59,6 +74,11 @@ export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatC
             {stats.checkinsAllowed !== undefined && `/${stats.checkinsAllowed}`}
           </p>
           <p className="text-xs text-gray-500">Check-ins</p>
+          {stats.daysInPeriod > 1 && stats.checkinsUsed > 0 && (
+            <p className="text-xs text-indigo-600">
+              ~{Math.round(stats.checkinsUsed / stats.daysInPeriod)} / day
+            </p>
+          )}
         </div>
       </div>
     </div>
