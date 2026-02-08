@@ -38,9 +38,9 @@ export function UnifiedTimerPage() {
     setSelectedDuration(duration);
   };
 
-  const handleComplete = useCallback(async () => {
+  const handleComplete = useCallback(async (completedAt?: Date) => {
     if (timer.state.sessionId) {
-      await session.endSession(timer.state.sessionId);
+      await session.endSession(timer.state.sessionId, completedAt);
     }
   }, [timer.state.sessionId, session]);
 
@@ -59,7 +59,7 @@ export function UnifiedTimerPage() {
           incompleteResult.session.type,
           incompleteResult.session.id,
           incompleteResult.session.startTime,
-          () => handleComplete(),
+          (completedAt: Date) => handleComplete(completedAt),
         );
         setSelectedDuration(incompleteResult.session.duration);
         setCheckedIncomplete(true);
@@ -219,8 +219,8 @@ export function UnifiedTimerPage() {
     }
 
     const { sessionId, startTime } = await session.startSession(durationToUse, activeMode);
-    timer.start(durationToUse, activeMode, sessionId, startTime, async () => {
-      await session.endSession(sessionId);
+    timer.start(durationToUse, activeMode, sessionId, startTime, async (completedAt: Date) => {
+      await session.endSession(sessionId, completedAt);
     });
   };
 
@@ -237,8 +237,8 @@ export function UnifiedTimerPage() {
 
     try {
       const { sessionId, startTime } = await session.startSession(duration, 'cooloff');
-      timer.start(duration, 'cooloff', sessionId, startTime, async () => {
-        await session.endSession(sessionId);
+      timer.start(duration, 'cooloff', sessionId, startTime, async (completedAt: Date) => {
+        await session.endSession(sessionId, completedAt);
       });
     } catch (error) {
       console.error('Failed to start cooloff session:', error);

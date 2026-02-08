@@ -38,9 +38,9 @@ export function useSession() {
   );
 
   const endSession = useCallback(
-    async (sessionId: string) => {
+    async (sessionId: string, completedAt?: Date) => {
       if (!user) throw new Error('Not authenticated');
-      await completeSession(user.uid, sessionId);
+      await completeSession(user.uid, sessionId, completedAt);
     },
     [user],
   );

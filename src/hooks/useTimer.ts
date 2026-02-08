@@ -16,7 +16,7 @@ const INITIAL_STATE: TimerState = {
 export function useTimer() {
   const [state, setState] = useState<TimerState>(INITIAL_STATE);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const onCompleteRef = useRef<(() => void) | null>(null);
+  const onCompleteRef = useRef<((completedAt: Date) => void) | null>(null);
 
   useEffect(() => {
     return () => {
@@ -32,16 +32,20 @@ export function useTimer() {
       const remaining = Math.max(0, Math.ceil(prev.totalDuration - elapsed));
 
       if (remaining <= 0 && prev.status === 'running') {
-        const now = new Date();
-        setTimeout(() => onCompleteRef.current?.(), 0);
+        // Use startTime + duration as the canonical end time.
+        // This handles backgrounded/throttled intervals correctly: if the tick
+        // fires late (e.g. user returns to app), we don't record "now" as the
+        // completion time — we record when the timer was actually supposed to end.
+        const completedAt = new Date(prev.startTime.getTime() + prev.totalDuration * 1000);
+        const exceededSeconds = Math.max(0, Math.floor((Date.now() - completedAt.getTime()) / 1000));
+        setTimeout(() => onCompleteRef.current?.(completedAt), 0);
 
-        // For both focus and break modes, continue ticking to show completion time
         return {
           ...prev,
           remainingSeconds: 0,
           status: 'exceeded',
-          completedAt: now,
-          exceededSeconds: 0,
+          completedAt,
+          exceededSeconds,
         };
       }
 
@@ -56,7 +60,7 @@ export function useTimer() {
   }, []);
 
   const start = useCallback(
-    (duration: number, mode: TimerMode, sessionId: string, startTime: Date, onComplete: () => void) => {
+    (duration: number, mode: TimerMode, sessionId: string, startTime: Date, onComplete: (completedAt: Date) => void) => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       onCompleteRef.current = onComplete;
 
@@ -83,7 +87,7 @@ export function useTimer() {
       mode: TimerMode,
       sessionId: string,
       originalStartTime: Date,
-      onComplete: () => void,
+      onComplete: (completedAt: Date) => void,
     ) => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       onCompleteRef.current = onComplete;
