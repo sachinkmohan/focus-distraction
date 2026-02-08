@@ -10,6 +10,7 @@ export interface Session {
   dismissed: boolean; // true if exceeded warning was dismissed
   completedAt: Date | null;
   createdAt: Date;
+  manual?: boolean; // true if manually added time (not from timer)
 }
 
 export interface CreateSessionInput {

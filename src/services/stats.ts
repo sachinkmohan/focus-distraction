@@ -16,9 +16,9 @@ export interface StatsSummary {
 }
 
 function summarize(sessions: Session[], daysInPeriod: number = 1): StatsSummary {
-  // Only count focus sessions that were completed fully (not interrupted)
+  // Only count focus sessions that were completed fully (not interrupted) and not manually added
   const completedFocusSessions = sessions.filter(
-    (s) => s.type === 'focus' && !s.interrupted
+    (s) => s.type === 'focus' && !s.interrupted && !s.manual
   );
 
   // But include ALL sessions (interrupted or not) for time tracking
