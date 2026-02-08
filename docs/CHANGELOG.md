@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-02-08 - Update 14: Fix Manual Time Increment Session Count Bug
+
+### Bug Fixes
+
+**Manual Time Additions No Longer Count as Sessions**
+- Fixed a bug where clicking the "+5m" button to manually add focus or break time would incorrectly increment the "Sessions" counter.
+- Previously, clicking "+5m" three times to add 15 minutes of exceeded time would add 3 to the session count, even though it represented work from a single session.
+- Manual time additions now only add to time totals (Focus/Break metrics) without affecting the Sessions counter.
+- This fix applies to both focus and break manual time additions on the stats page.
+
+### Technical Details
+
+**Root Cause:**
+- The `addManualTime()` function created session documents that were indistinguishable from regular timer completions (with `type: 'focus'`, `completed: true`, `interrupted: false`).
+- The stats counter filtered sessions by `s.type === 'focus' && !s.interrupted`, which included both real timer sessions and manual additions.
+
+**Solution:**
+- Added an optional `manual: boolean` field to the Session type to distinguish manual time additions from actual timer completions.
+- Manual sessions are now marked with `manual: true` when created.
+- The stats counter now excludes manual sessions with the filter `s.type === 'focus' && !s.interrupted && !s.manual`.
+- The `toSession()` conversion function now properly reads the `manual` field from Firestore documents.
+
+### Files Modified
+- `src/types/session.ts` - Added optional `manual?: boolean` field to Session interface
+- `src/services/sessions.ts` - Mark manual sessions with `manual: true` and read the field in `toSession()`
+- `src/services/stats.ts` - Exclude manual sessions from session count with `!s.manual` filter
+
+---
+
 ## 2026-02-08 - Update 13: Per-Day Averages for All Stats Metrics
 
 ### Improvements
