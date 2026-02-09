@@ -1,5 +1,49 @@
 # Changelog
 
+## 2026-02-09 - Update 16: Last Check-in Timestamp Display
+
+### Features
+
+**"Last: X ago" Timestamp Under Check-in Button**
+- Added a "Last: X ago" timestamp display in the Check-in tab showing when the user last checked in.
+- Appears below the "Check-ins Today" counter, using a subtle gray color (`text-gray-400`).
+- Shows relative time in terse format: "5s ago", "2m ago", "1h ago", "3d ago".
+- Automatically hides when no check-ins exist for the day (clean UI).
+- Persists across page refreshes by querying Firestore.
+- Updates immediately after performing a check-in.
+
+### Technical Details
+
+**Implementation:**
+- Added `getLastCheckin()` service function in `sessions.ts` that queries today's check-ins and returns the most recent `createdAt` timestamp.
+- Avoids Firestore composite index requirement by querying all today's sessions via `querySessionsInRange()`, then filtering/sorting in memory.
+- Exposed `getLastCheckin` in `useSession` hook with authentication handling and memoization.
+- Created `formatTimeAgo()` utility in `duration.ts` using date-fns `differenceInSeconds` for safe date arithmetic.
+- Clamps negative differences to zero (handles future dates/clock skew gracefully).
+- Added `lastCheckinAt` state in `UnifiedTimerPage` component.
+- Fetches check-in status and last check-in timestamp in parallel using `Promise.all()` for optimal performance.
+- Updates timestamp after successful check-in for instant user feedback.
+
+**Why This Feature?**
+- Provides immediate context about check-in activity patterns.
+- Helps users understand their daily check-in rhythm.
+- Maintains consistency with timer-based "exceeded time" displays.
+
+### Bug Fixes
+
+**Safe Date Arithmetic**
+- `formatTimeAgo()` now uses date-fns `differenceInSeconds` instead of manual `Date.getTime()` arithmetic.
+- Prevents negative time values for future dates (clock skew, timezone issues).
+- Handles DST transitions, leap seconds, and timezone boundaries correctly.
+
+### Files Modified
+- `src/services/sessions.ts` - Added `getLastCheckin()` function using existing query patterns
+- `src/hooks/useSession.ts` - Exposed `getLastCheckin` in hook interface
+- `src/utils/duration.ts` - Added `formatTimeAgo()` utility with date-fns integration
+- `src/components/timer/UnifiedTimerPage.tsx` - Added state, fetching logic, and UI rendering
+
+---
+
 ## 2026-02-09 - Update 15: Manual Cool-off Time Addition
 
 ### Features

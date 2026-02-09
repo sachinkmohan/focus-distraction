@@ -106,11 +106,12 @@ Sessions in Firestore have three key boolean flags:
 ## Key Files
 
 - `src/App.tsx`: Main routing setup
-- `src/components/timer/UnifiedTimerPage.tsx`: Main timer page (focus + break modes)
+- `src/components/timer/UnifiedTimerPage.tsx`: Main timer page (focus + break modes + check-in with last check-in display)
 - `src/components/stats/StatsPage.tsx`: Statistics page with manual time addition (+5m buttons)
 - `src/hooks/useTimer.ts`: Core timer logic with interval management
-- `src/hooks/useSession.ts`: Firebase session lifecycle (includes addManualTime)
+- `src/hooks/useSession.ts`: Firebase session lifecycle (includes addManualTime, getLastCheckin)
 - `src/services/sessions.ts`: All Firestore session operations
+- `src/utils/duration.ts`: Time formatting utilities (formatTimeAgo, formatDurationLabel, etc.)
 - `src/types/session.ts`, `src/types/timer.ts`: Type definitions
 - `firestore.rules`: Security rules (user data scoped to userId)
 
@@ -173,6 +174,12 @@ Located in `src/components/tree/TreeAnimation.tsx`:
    - Calculates elapsed time vs. duration
    - Auto-completes if time expired (using `startTime + duration` as `completedAt`)
    - Returns remaining time if still in progress
+
+6. **Avoiding Firestore composite indexes**:
+   - Prefer querying with simple filters, then filter/sort in memory
+   - Pattern: Use `querySessionsInRange()` + JavaScript `.filter()` + `.sort()`
+   - Example: `getLastCheckin()` queries all today's sessions, then filters by type in-app
+   - Trade-off: Fetches slightly more data but eliminates index dependency
 
 ## Styling
 

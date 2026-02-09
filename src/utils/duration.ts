@@ -1,3 +1,5 @@
+import { differenceInSeconds } from 'date-fns';
+
 export function parseDuration(input: string): number | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
@@ -42,12 +44,13 @@ export function formatCountdown(totalSeconds: number): string {
 /**
  * Format a date as relative time (e.g., "5m ago", "2h ago", "3d ago")
  * Returns null if date is null
+ * Uses date-fns for safe date arithmetic and clamps negative values (future dates) to zero
  */
 export function formatTimeAgo(date: Date | null): string | null {
   if (!date) return null;
 
-  const now = Date.now();
-  const diff = Math.floor((now - date.getTime()) / 1000); // seconds
+  // Use date-fns for safe date arithmetic
+  const diff = Math.max(0, differenceInSeconds(new Date(), date)); // Clamp negative to 0
 
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
