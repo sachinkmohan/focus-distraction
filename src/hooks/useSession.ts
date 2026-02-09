@@ -10,6 +10,7 @@ import {
   dismissSession,
   canCheckIn,
   createCheckin,
+  getLastCheckin as getLastCheckinService,
   addManualTime as addManualTimeService,
 } from '@/services/sessions';
 import { addRecentDuration } from '@/services/templates';
@@ -85,6 +86,11 @@ export function useSession() {
     return await canCheckIn(user.uid);
   }, [user]);
 
+  const getLastCheckin = useCallback(async () => {
+    if (!user) return null;
+    return await getLastCheckinService(user.uid);
+  }, [user]);
+
   const addManualTime = useCallback(
     async (type: 'focus' | 'break' | 'cooloff', durationSeconds: number) => {
       if (!user) throw new Error('Not authenticated');
@@ -102,6 +108,7 @@ export function useSession() {
     dismissExceededSession,
     checkIn,
     getCheckInStatus,
+    getLastCheckin,
     addManualTime,
   };
 }
