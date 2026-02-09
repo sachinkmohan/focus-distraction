@@ -143,6 +143,21 @@ export async function canCheckIn(
   return { allowed: used < limit, used, limit, minutesToNextBonus };
 }
 
+export async function getLastCheckin(userId: string): Promise<Date | null> {
+  // Query today's sessions to avoid composite index requirement
+  const { start, end } = getTodayRange();
+  const sessions = await querySessionsInRange(userId, start, end);
+
+  // Filter for check-ins and find the most recent
+  const checkins = sessions
+    .filter((s) => s.type === 'checkin')
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  if (checkins.length === 0) return null;
+
+  return checkins[0].createdAt;
+}
+
 export async function createCheckin(userId: string): Promise<{ sessionId: string }> {
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const lockDoc = doc(db, `users/${userId}/locks/checkin-${today}`);

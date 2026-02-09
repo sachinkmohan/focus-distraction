@@ -38,3 +38,19 @@ export function formatCountdown(totalSeconds: number): string {
   if (h > 0) return `${pad(h)}:${pad(m)}:${pad(s)}`;
   return `${pad(m)}:${pad(s)}`;
 }
+
+/**
+ * Format a date as relative time (e.g., "5m ago", "2h ago", "3d ago")
+ * Returns null if date is null
+ */
+export function formatTimeAgo(date: Date | null): string | null {
+  if (!date) return null;
+
+  const now = Date.now();
+  const diff = Math.floor((now - date.getTime()) / 1000); // seconds
+
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
