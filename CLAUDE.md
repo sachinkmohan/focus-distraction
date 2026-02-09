@@ -107,8 +107,9 @@ Sessions in Firestore have three key boolean flags:
 
 - `src/App.tsx`: Main routing setup
 - `src/components/timer/UnifiedTimerPage.tsx`: Main timer page (focus + break modes)
+- `src/components/stats/StatsPage.tsx`: Statistics page with manual time addition (+5m buttons)
 - `src/hooks/useTimer.ts`: Core timer logic with interval management
-- `src/hooks/useSession.ts`: Firebase session lifecycle
+- `src/hooks/useSession.ts`: Firebase session lifecycle (includes addManualTime)
 - `src/services/sessions.ts`: All Firestore session operations
 - `src/types/session.ts`, `src/types/timer.ts`: Type definitions
 - `firestore.rules`: Security rules (user data scoped to userId)
@@ -124,6 +125,7 @@ users/{userId}/sessions/{sessionId}
     completed: boolean,
     interrupted: boolean,
     dismissed: boolean,
+    manual: boolean, // true for manual time additions via "+5m" buttons
     completedAt: Timestamp | null,
     createdAt: Timestamp
   }

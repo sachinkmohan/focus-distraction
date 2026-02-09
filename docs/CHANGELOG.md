@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-02-09 - Update 15: Manual Cool-off Time Addition
+
+### Features
+
+**Quick +5m Button for Cool-off Stats**
+- Added a "+5m" button on the Stats page for manually incrementing cool-off time in the "Today" section.
+- Matches the existing pattern for Focus and Break manual time additions.
+- Button appears on the right side of the Cool-off stats, using the amber color scheme consistent with cool-off theming.
+- Creates a manual session entry in Firestore with `type: 'cooloff'`, `completed: true`, `manual: true`.
+- Shows toast notification: "+5m cool-off added" when successfully added.
+
+### Technical Details
+
+**Implementation:**
+- Extended `addManualTime()` service function to accept `'cooloff'` in addition to `'focus' | 'break'`.
+- Updated the `useSession` hook type signature to include cooloff support.
+- Added `onAddCooloffTime` prop to `StatCard` component with matching UI button.
+- Created `handleAddCooloffTime` handler in `StatsPage` that adds 300 seconds (5 minutes).
+
+**Why Manual Cool-off Time?**
+- Users can track exceeded cool-off periods that occurred when the app wasn't running.
+- Maintains parity with Focus and Break manual tracking features.
+- Ensures comprehensive time tracking across all session types.
+
+### Files Modified
+- `src/services/sessions.ts` - Extended `addManualTime()` type parameter to include `'cooloff'`
+- `src/hooks/useSession.ts` - Updated `addManualTime` callback type signature
+- `src/components/stats/StatCard.tsx` - Added `onAddCooloffTime` prop and "+5m" button UI
+- `src/components/stats/StatsPage.tsx` - Added `handleAddCooloffTime` handler and wired to Today card
+
+---
+
 ## 2026-02-08 - Update 14: Fix Manual Time Increment Session Count Bug
 
 ### Bug Fixes
