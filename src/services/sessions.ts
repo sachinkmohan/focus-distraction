@@ -229,7 +229,7 @@ export async function createCheckin(userId: string): Promise<{ sessionId: string
 
 export async function addManualTime(
   userId: string,
-  type: 'focus' | 'break',
+  type: 'focus' | 'break' | 'cooloff',
   durationSeconds: number,
 ): Promise<void> {
   // Validate duration is positive

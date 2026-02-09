@@ -13,10 +13,10 @@ export function StatsPage() {
     try {
       await session.addManualTime('focus', 300); // 5 minutes
       await refresh();
-      toast.success('+5m focus added', { autoClose: 1000, position: 'bottom-center' });
+      toast.success('+5m focus added', { autoClose: 1000, position: 'top-center' });
     } catch (error) {
       console.error('Failed to add focus time:', error);
-      toast.error('Failed to add focus time', { autoClose: 2000, position: 'bottom-center' });
+      toast.error('Failed to add focus time', { autoClose: 2000, position: 'top-center' });
     }
   };
 
@@ -24,10 +24,21 @@ export function StatsPage() {
     try {
       await session.addManualTime('break', 300); // 5 minutes
       await refresh();
-      toast.info('+5m break added', { autoClose: 1000, position: 'bottom-center' });
+      toast.info('+5m break added', { autoClose: 1000, position: 'top-center' });
     } catch (error) {
       console.error('Failed to add break time:', error);
-      toast.error('Failed to add break time', { autoClose: 2000, position: 'bottom-center' });
+      toast.error('Failed to add break time', { autoClose: 2000, position: 'top-center' });
+    }
+  };
+
+  const handleAddCooloffTime = async () => {
+    try {
+      await session.addManualTime('cooloff', 300); // 5 minutes
+      await refresh();
+      toast.info('+5m cool-off added', { autoClose: 1000, position: 'top-center' });
+    } catch (error) {
+      console.error('Failed to add cool-off time:', error);
+      toast.error('Failed to add cool-off time', { autoClose: 2000, position: 'top-center' });
     }
   };
 
@@ -57,6 +68,7 @@ export function StatsPage() {
           stats={today}
           onAddFocusTime={handleAddFocusTime}
           onAddBreakTime={handleAddBreakTime}
+          onAddCooloffTime={handleAddCooloffTime}
         />
       )}
       {yesterday && <StatCard title="Yesterday" stats={yesterday} />}
