@@ -6,9 +6,10 @@ interface StatCardProps {
   stats: StatsSummary;
   onAddFocusTime?: () => void;
   onAddBreakTime?: () => void;
+  onAddCooloffTime?: () => void;
 }
 
-export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatCardProps) {
+export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime, onAddCooloffTime }: StatCardProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <h3 className="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">{title}</h3>
@@ -66,6 +67,14 @@ export function StatCard({ title, stats, onAddFocusTime, onAddBreakTime }: StatC
             <p className="text-xs text-amber-600">
               ~{formatHoursMinutes(Math.round(stats.cooloffSeconds / stats.daysInPeriod))} / day
             </p>
+          )}
+          {onAddCooloffTime && (
+            <button
+              onClick={onAddCooloffTime}
+              className="mt-1 min-h-[44px] min-w-[44px] px-3 py-2 text-xs font-medium text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded"
+            >
+              +5m
+            </button>
           )}
         </div>
         <div>

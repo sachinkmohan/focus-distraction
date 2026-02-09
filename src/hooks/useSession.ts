@@ -86,7 +86,7 @@ export function useSession() {
   }, [user]);
 
   const addManualTime = useCallback(
-    async (type: 'focus' | 'break', durationSeconds: number) => {
+    async (type: 'focus' | 'break' | 'cooloff', durationSeconds: number) => {
       if (!user) throw new Error('Not authenticated');
       await addManualTimeService(user.uid, type, durationSeconds);
     },
