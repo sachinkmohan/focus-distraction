@@ -6,7 +6,6 @@ import { useRecentDurations } from '@/hooks/useRecentDurations';
 import { useSettings } from '@/hooks/useSettings';
 import { FOCUS_PRESETS, BREAK_PRESETS, COOLOFF_PRESETS } from '@/utils/constants';
 import { CHECKIN_INTERVAL_OPTIONS, type CheckinBonusInterval } from '@/types/settings';
-import { formatTimeAgo } from '@/utils/duration';
 import { DurationPicker } from './DurationPicker';
 import { QuickSelectButtons } from './QuickSelectButtons';
 import { TimerDisplay } from './TimerDisplay';
@@ -34,7 +33,6 @@ export function UnifiedTimerPage() {
   } | null>(null);
   const [checkinStatusError, setCheckinStatusError] = useState(false);
   const [checkinRetryCount, setCheckinRetryCount] = useState(0);
-  const [lastCheckinAt, setLastCheckinAt] = useState<Date | null>(null);
 
   const handleDurationSelect = (duration: number) => {
     setSelectedDuration(duration);
@@ -181,11 +179,7 @@ export function UnifiedTimerPage() {
     const loadStatus = async () => {
       setCheckinStatusError(false);
       try {
-        // Fetch status and last check-in in parallel
-        const [status, lastCheckin] = await Promise.all([
-          session.getCheckInStatus(),
-          session.getLastCheckin(),
-        ]);
+        const status = await session.getCheckInStatus();
         if (!cancelled) {
           if (status) {
             setCheckinStatus({
@@ -201,13 +195,11 @@ export function UnifiedTimerPage() {
               minutesToNextBonus: 0,
             });
           }
-          setLastCheckinAt(lastCheckin);
         }
       } catch (error) {
         console.error('Failed to load check-in status:', error);
         if (!cancelled) {
           setCheckinStatus(null);
-          setLastCheckinAt(null);
           setCheckinStatusError(true);
         }
       }
@@ -297,11 +289,8 @@ export function UnifiedTimerPage() {
     try {
       await session.checkIn();
 
-      // Update status and last check-in timestamp
-      const [status, lastCheckin] = await Promise.all([
-        session.getCheckInStatus(),
-        session.getLastCheckin(),
-      ]);
+      // Update status
+      const status = await session.getCheckInStatus();
 
       if (status) {
         setCheckinStatus({
@@ -310,7 +299,6 @@ export function UnifiedTimerPage() {
           minutesToNextBonus: status.minutesToNextBonus,
         });
       }
-      setLastCheckinAt(lastCheckin);
     } catch (error) {
       console.error('Check-in failed:', error);
       // TODO: Show user-friendly error message
@@ -439,9 +427,6 @@ export function UnifiedTimerPage() {
                 {checkinStatus.used}/{checkinStatus.limit ?? '?'}
               </p>
               <p className="text-sm text-gray-500">Check-ins Today</p>
-              {lastCheckinAt && (
-                <p className="text-sm text-gray-400">Last: {formatTimeAgo(lastCheckinAt)}</p>
-              )}
               <p className="text-sm text-indigo-600">
                 <span className="text-xl">{checkinStatus.minutesToNextBonus}</span> more min to earn
                 next bonus

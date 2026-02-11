@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { subHours } from 'date-fns';
 import { db } from '@/config/firebase';
-import type { Session, CreateSessionInput } from '@/types';
+import type { Session, CreateSessionInput, SessionType } from '@/types';
 import { CHECKIN_BASE_LIMIT } from '@/utils/constants';
 import { getTodayRange } from '@/utils/date';
 import { getUserSettings } from './settings';
@@ -158,6 +158,52 @@ export async function getLastCheckin(userId: string): Promise<Date | null> {
   return checkins[0].createdAt;
 }
 
+/**
+ * Generic function to get the last session of a given type created today
+ */
+export async function getLastSession(
+  userId: string,
+  type: SessionType
+): Promise<Date | null> {
+  const { start, end } = getTodayRange();
+  const sessions = await querySessionsInRange(userId, start, end);
+
+  const filtered = sessions
+    .filter((s) => s.type === type)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  if (filtered.length === 0) return null;
+  return filtered[0].createdAt;
+}
+
+/**
+ * Fetch all last session times in a single query (optimized)
+ * Includes both timed sessions and manual time additions
+ */
+export async function getAllLastSessions(userId: string): Promise<{
+  focus: Date | null;
+  break: Date | null;
+  cooloff: Date | null;
+  checkin: Date | null;
+}> {
+  const { start, end } = getTodayRange();
+  const sessions = await querySessionsInRange(userId, start, end);
+
+  const getLatest = (type: SessionType): Date | null => {
+    const filtered = sessions
+      .filter((s) => s.type === type)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return filtered.length > 0 ? filtered[0].createdAt : null;
+  };
+
+  return {
+    focus: getLatest('focus'),
+    break: getLatest('break'),
+    cooloff: getLatest('cooloff'),
+    checkin: getLatest('checkin'),
+  };
+}
+
 export async function createCheckin(userId: string): Promise<{ sessionId: string }> {
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const lockDoc = doc(db, `users/${userId}/locks/checkin-${today}`);
@@ -246,7 +292,7 @@ export async function addManualTime(
   userId: string,
   type: 'focus' | 'break' | 'cooloff',
   durationSeconds: number,
-): Promise<void> {
+): Promise<{ sessionId: string; createdAt: Date }> {
   // Validate duration is positive
   if (durationSeconds <= 0) {
     throw new Error('Duration must be greater than zero');
@@ -266,6 +312,12 @@ export async function addManualTime(
     createdAt: serverTimestamp(),
     manual: true,
   });
+
+  // Return metadata for immediate local state update
+  return {
+    sessionId: sessionDoc.id,
+    createdAt: now, // Use client time for instant display
+  };
 }
 
 export async function checkIncompleteSession(userId: string): Promise<
