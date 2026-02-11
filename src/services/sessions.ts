@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { subHours } from 'date-fns';
 import { db } from '@/config/firebase';
-import type { Session, CreateSessionInput } from '@/types';
+import type { Session, CreateSessionInput, SessionType } from '@/types';
 import { CHECKIN_BASE_LIMIT } from '@/utils/constants';
 import { getTodayRange } from '@/utils/date';
 import { getUserSettings } from './settings';

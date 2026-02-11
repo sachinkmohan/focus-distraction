@@ -22,6 +22,14 @@ export function StatsPage() {
   // Track if we've already fetched last sessions (to prevent re-fetching on every render)
   const hasFetchedLastSessions = useRef(false);
 
+  // Default object to ensure complete state shape when prev is null
+  const emptyLastSessions = {
+    focus: null,
+    cooloff: null,
+    checkin: null,
+    break: null,
+  };
+
   const handleAddFocusTime = async () => {
     try {
       const result = await session.addManualTime('focus', 300); // 5 minutes
@@ -29,7 +37,7 @@ export function StatsPage() {
 
       // Immediately update last session time without fetching
       setLastSessions((prev) => ({
-        ...prev,
+        ...(prev ?? emptyLastSessions),
         focus: result.createdAt,
       }));
 
@@ -47,7 +55,7 @@ export function StatsPage() {
 
       // Immediately update last session time without fetching
       setLastSessions((prev) => ({
-        ...prev,
+        ...(prev ?? emptyLastSessions),
         break: result.createdAt,
       }));
 
@@ -65,7 +73,7 @@ export function StatsPage() {
 
       // Immediately update last session time without fetching
       setLastSessions((prev) => ({
-        ...prev,
+        ...(prev ?? emptyLastSessions),
         cooloff: result.createdAt,
       }));
 
