@@ -54,6 +54,11 @@ export function formatTimeAgo(date: Date | null): string | null {
 
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 86400) {
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    if (h > 0 && m > 0) return `${h}h ${m}m ago`;
+    return `${h}h ago`;
+  }
   return `${Math.floor(diff / 86400)}d ago`;
 }

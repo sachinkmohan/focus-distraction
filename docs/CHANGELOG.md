@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-02-11 - Update 18: Time Formatting Precision Fix
+
+### Bug Fixes
+
+**Fixed Time Display Precision Loss in Last Session Activity**
+- Fixed `formatTimeAgo()` function dropping minutes when displaying times over 1 hour.
+- Before: Sessions completed 4h 30m ago showed as "4h ago" (losing 30 minutes of precision).
+- After: Now correctly shows "4h 30m ago" with full precision.
+- Affects all Last Session Activity timestamps in the Stats page.
+- Implementation follows the same pattern as `formatDurationLabel()` for consistency.
+
+### Technical Details
+
+**Root Cause:**
+- The hours branch in `formatTimeAgo()` (line 57 in `duration.ts`) only calculated hours: `Math.floor(diff / 3600)`.
+- Remaining minutes after hours were discarded entirely.
+
+**Solution:**
+- Calculate both hours and remaining minutes: `h = Math.floor(diff / 3600)`, `m = Math.floor((diff % 3600) / 60)`.
+- Display both when present: `"4h 30m ago"`.
+- Display hours only when minutes are zero: `"4h ago"` (no "0m" clutter).
+- Modulo operator (`%`) captures remainder seconds, then divides by 60 for minutes.
+
+**Impact:**
+- File modified: `src/utils/duration.ts` (lines 57-62)
+- No breaking changes - function signature unchanged
+- Immediate improvement in time display accuracy
+- Particularly important for break timing awareness
+
+---
+
 ## 2026-02-11 - Update 17: Last Session Activity Tracker with Performance Optimization
 
 ### Features
