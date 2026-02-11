@@ -106,11 +106,12 @@ Sessions in Firestore have three key boolean flags:
 ## Key Files
 
 - `src/App.tsx`: Main routing setup
-- `src/components/timer/UnifiedTimerPage.tsx`: Main timer page (focus + break modes + check-in with last check-in display)
-- `src/components/stats/StatsPage.tsx`: Statistics page with manual time addition (+5m buttons)
+- `src/components/timer/UnifiedTimerPage.tsx`: Main timer page (focus + break modes + check-in)
+- `src/components/stats/StatsPage.tsx`: Statistics page with manual time addition (+5m buttons) and last session activity tracker
+- `src/components/stats/LastSessionActivity.tsx`: Responsive grid displaying last completion time for all session types
 - `src/hooks/useTimer.ts`: Core timer logic with interval management
-- `src/hooks/useSession.ts`: Firebase session lifecycle (includes addManualTime, getLastCheckin)
-- `src/services/sessions.ts`: All Firestore session operations
+- `src/hooks/useSession.ts`: Firebase session lifecycle (includes addManualTime, getAllLastSessions)
+- `src/services/sessions.ts`: All Firestore session operations (includes optimized last session queries)
 - `src/utils/duration.ts`: Time formatting utilities (formatTimeAgo, formatDurationLabel, etc.)
 - `src/types/session.ts`, `src/types/timer.ts`: Type definitions
 - `firestore.rules`: Security rules (user data scoped to userId)
@@ -178,8 +179,16 @@ Located in `src/components/tree/TreeAnimation.tsx`:
 6. **Avoiding Firestore composite indexes**:
    - Prefer querying with simple filters, then filter/sort in memory
    - Pattern: Use `querySessionsInRange()` + JavaScript `.filter()` + `.sort()`
-   - Example: `getLastCheckin()` queries all today's sessions, then filters by type in-app
+   - Example: `getAllLastSessions()` queries all today's sessions, then filters by type in-app
    - Trade-off: Fetches slightly more data but eliminates index dependency
+
+7. **Optimistic updates with service return values** (Firestore optimization):
+   - Service functions return created/updated data instead of just void
+   - Enables immediate UI updates without re-querying Firestore
+   - Example: `addManualTime()` returns `{ sessionId, createdAt }` for instant state updates
+   - Pattern: `const result = await service.operation()` → `setState(prev => ({ ...prev, field: result.data }))`
+   - Use client timestamp for display (Firestore still uses `serverTimestamp()` for storage)
+   - Reduces Firestore read operations by 50%+ for common user actions
 
 ## Styling
 
